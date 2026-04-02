@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stone Creek Fishing</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪨</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Bitter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0b1120; }
+select, input, textarea, button { font-family: 'Barlow', sans-serif; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0b1120; }
+::-webkit-scrollbar-thumb { background: #1e3348; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+// Storage wrapper (uses localStorage for real deployment)
+const storage = {
+  async get(key) { 
+    const v = localStorage.getItem(key); 
+    return v ? { value: v } : null; 
+  },
+  async set(key, value) { 
+    localStorage.setItem(key, value); 
+    return { key, value }; 
+  },
+  async delete(key) { 
+    localStorage.removeItem(key); 
+    return { key, deleted: true }; 
+  }
+};
+
+const { useState, useEffect, useCallback } = React;
+
+const SK = { USER: "sc-user", SPOTS: "sc-spots", CATCHES: "sc-catches", PRO: "sc-pro" };
+
+const GUIDES = {
+  "s2": [
+    { name: "Park City Fly Fishing", rating: 4.9, reviews: 127, price: "$450/day", specialties: ["Dry Fly", "Nymph", "Walk & Wade"], phone: "435-658-1166", img: "🎣", featured: true, tagline: "Daily hatch reports. All skill levels welcome.", discount: "10% off first trip via Stone Creek" },
+    { name: "Wild Utah Fly Fishing", rating: 4.8, reviews: 89, price: "$425/day", specialties: ["Trophy Browns", "Technical Water"], phone: "801-555-0142", img: "🏔️", featured: false, tagline: "Specializing in the Middle Provo since 2012." },
+  ],
+  "s1": [
+    { name: "Strawberry Bay Marina Guides", rating: 4.6, reviews: 64, price: "$350/half-day", specialties: ["Trolling", "Shore Fishing", "Boat Rental"], phone: "435-548-2261", img: "🚤", featured: true, tagline: "Full service marina with guided trips.", discount: "Free rod rental with Stone Creek booking" },
+  ],
+  "s4": [
+    { name: "Flaming Gorge Trophy Fishing", rating: 4.9, reviews: 203, price: "$500/day", specialties: ["Lake Trout", "Jigging", "Electronics"], phone: "435-555-0198", img: "🐟", featured: true, tagline: "Record-class lake trout specialists.", discount: "15% off weekday trips via Stone Creek" },
+    { name: "Green River Outfitters", rating: 4.7, reviews: 156, price: "$475/day", specialties: ["Tailwater", "Drift Boat", "Fly Fishing"], phone: "435-555-0211", img: "🛶", featured: false, tagline: "Float the Green River below Flaming Gorge Dam." },
+  ],
+};
+
+const GEAR = {
+  "s2": [
+    { name: "Umpqua BWO Parachute #20 (3pk)", price: "$5.97", cat: "Flies", affiliate: true, sponsor: "Umpqua", hot: true },
+    { name: "Griffith's Gnat #18 (3pk)", price: "$4.50", cat: "Flies", affiliate: true },
+    { name: "Sow Bug Assortment 12pk", price: "$14.99", cat: "Flies", affiliate: true, sponsor: "Umpqua" },
+    { name: "Rio 5.5X Fluorocarbon Tippet", price: "$12.95", cat: "Terminal", affiliate: true },
+    { name: "Redington Classic Trout 9' 5wt", price: "$129.99", cat: "Rods", affiliate: true, hot: true },
+    { name: "Orvis Clearwater Reel II", price: "$89.00", cat: "Reels", affiliate: true, sponsor: "Orvis" },
+  ],
+  "s1": [
+    { name: "Berkley PowerBait Chartreuse", price: "$5.49", cat: "Bait", affiliate: true, hot: true },
+    { name: "Jake's Spin-a-Lure 1/4oz", price: "$6.99", cat: "Lures", affiliate: true },
+    { name: "Rapala Countdown CD07", price: "$9.99", cat: "Lures", affiliate: true },
+    { name: "Eagle Claw Spinning Combo 6'6\"", price: "$34.99", cat: "Combos", affiliate: true },
+  ],
+  "s4": [
+    { name: "Tube Jig Kit 1/2oz (12pk)", price: "$18.99", cat: "Jigs", affiliate: true, hot: true },
+    { name: "Crippled Herring Spoon 3/4oz", price: "$8.49", cat: "Spoons", affiliate: true },
+    { name: "Humminbird Helix 7 Finder", price: "$449.99", cat: "Electronics", affiliate: true, sponsor: "Humminbird" },
+    { name: "Scud Assortment #14-18 (12pk)", price: "$16.99", cat: "Flies", affiliate: true },
+  ],
+};
+
+const HATCH = {
+  "Provo River (Middle)": {
+    cur: { status: "Good", flow: "136 CFS", temp: "42°F" },
+    active: [
+      { name: "Buffalo Midge", size: "#16-18", time: "11am-1pm", note: "Biggest midges on the river. Dark. Splashy rises." },
+      { name: "BWO (Baetis)", size: "#20-24", time: "11:30am-2pm", note: "Best on overcast days. April is prime." },
+      { name: "Midges", size: "#22-26", time: "All day", note: "Year-round primary food source." },
+    ],
+    tactics: [
+      { type: "Nymphs", flies: ["Sow Bugs #18-22", "KF Flasher #22-26", "Egg Patterns #16-18", "Pheasant Tail #20-22"] },
+      { type: "Dries", flies: ["Griffith's Gnat #18-20", "CDC Comparadun #20-24", "Parachute Adams #20-24"] },
+      { type: "Streamers", flies: ["Olive Bugger #10-14", "Dead-drift jig streamers"] },
+    ],
+    tip: "Sleep in. Bug activity peaks midday. 5.5-6x tippet, light rig. Nymph mornings, dries on rises.",
+    cal: [
+      { m: "Jan", b: ["Midges","Eggs"] },{ m: "Feb", b: ["Midges","Sow Bugs"] },{ m: "Mar", b: ["Buffalo Midge","BWO"] },
+      { m: "Apr", b: ["BWO","Skwala Stone"] },{ m: "May", b: ["Caddis","Golden Stone"] },{ m: "Jun", b: ["PMD","Green Drake"] },
+      { m: "Jul", b: ["Green Drake","PMD"] },{ m: "Aug", b: ["PMD","Yellow Sally"] },{ m: "Sep", b: ["BWO","Caddis"] },
+      { m: "Oct", b: ["BWO","Midges"] },{ m: "Nov", b: ["Midges","Eggs"] },{ m: "Dec", b: ["Midges","Eggs"] },
+    ]
+  },
+  "Strawberry Reservoir": {
+    cur: { status: "Fair", flow: "Stillwater", temp: "38°F" },
+    active: [{ name: "Midges", size: "#18-22", time: "Midday", note: "Main forage in spring." }],
+    tactics: [
+      { type: "Bait", flies: ["PowerBait (Chartreuse)", "Worm & Marshmallow", "Mice Tails"] },
+      { type: "Lures", flies: ["Jake's Spin-a-Lure", "Kastmaster Silver", "Rapala Countdown #7"] },
+    ],
+    tip: "Fish tributary inlets in spring. PowerBait near marina. Trolling pop gear 15-25ft summer.",
+    cal: [
+      { m: "Jan", b: ["Ice"] },{ m: "Feb", b: ["Ice"] },{ m: "Mar", b: ["Midges"] },{ m: "Apr", b: ["Midges","Callibaetis"] },
+      { m: "May", b: ["Callibaetis","Damsel"] },{ m: "Jun", b: ["Callibaetis","Scuds"] },{ m: "Jul", b: ["Callibaetis"] },
+      { m: "Aug", b: ["Callibaetis","Ants"] },{ m: "Sep", b: ["Midges"] },{ m: "Oct", b: ["Midges"] },
+      { m: "Nov", b: ["Midges"] },{ m: "Dec", b: ["Ice"] },
+    ]
+  },
+  "Flaming Gorge": {
+    cur: { status: "Good", flow: "800 CFS", temp: "40°F" },
+    active: [
+      { name: "Midges", size: "#20-24", time: "Midday", note: "Below dam on Green River." },
+      { name: "Scuds", size: "#14-18", time: "All day", note: "Year-round tailwater forage." },
+    ],
+    tactics: [
+      { type: "Lake Jigging", flies: ["Tube Jigs 1/2-1oz", "Airplane Jigs", "Crippled Herring"] },
+      { type: "Tailwater", flies: ["Scud #14-18 (Orange/Pink)", "San Juan Worm", "Woolly Bugger #6-10"] },
+    ],
+    tip: "Lakers: jig 80-120ft with electronics. Green River below dam = world-class wade fishing.",
+    cal: [
+      { m: "Jan", b: ["Midges"] },{ m: "Feb", b: ["Midges"] },{ m: "Mar", b: ["Midges","Scuds"] },{ m: "Apr", b: ["BWO","Scuds"] },
+      { m: "May", b: ["Caddis","BWO"] },{ m: "Jun", b: ["Cicadas","PMD"] },{ m: "Jul", b: ["Cicadas","PMD"] },
+      { m: "Aug", b: ["Hoppers","Caddis"] },{ m: "Sep", b: ["BWO"] },{ m: "Oct", b: ["BWO","Eggs"] },
+      { m: "Nov", b: ["Midges"] },{ m: "Dec", b: ["Midges"] },
+    ]
+  },
+};
+
+const IMG = {
+  "Provo River (Middle)": "https://images.unsplash.com/photo-1468956398224-6d6f66e22c35?w=800&h=400&fit=crop",
+  "Strawberry Reservoir": "https://images.unsplash.com/photo-1505765050516-f72dcac9c60e?w=800&h=400&fit=crop",
+  "Jordanelle Reservoir": "https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=800&h=400&fit=crop",
+  "Flaming Gorge": "https://images.unsplash.com/photo-1500534314263-0869cdddb5b4?w=800&h=400&fit=crop",
+  "Fish Lake": "https://images.unsplash.com/photo-1508193638397-1c4234db14d8?w=800&h=400&fit=crop",
+};
+
+const SPOTS0 = [
+  { id:"s1",name:"Strawberry Reservoir",reg:"Wasatch",species:["Rainbow Trout","Cutthroat Trout","Kokanee Salmon"],rating:4.5,ratings:[5,4,5,4],catches:42,by:"TrailMaster",desc:"Premier stillwater fishery. Best early summer and fall." },
+  { id:"s2",name:"Provo River (Middle)",reg:"Wasatch",species:["Brown Trout","Rainbow Trout","Mountain Whitefish"],rating:4.8,ratings:[5,5,5,4,5],catches:67,by:"FlyRodKing",desc:"Blue-ribbon stream. 2,500-3,500 fish per mile. Walk-and-wade paradise." },
+  { id:"s3",name:"Jordanelle Reservoir",reg:"Wasatch",species:["Smallmouth Bass","Rainbow Trout","Perch"],rating:3.9,ratings:[4,4,3,4],catches:28,by:"BassBandit",desc:"Great bass in summer. Rocky points and structure." },
+  { id:"s4",name:"Flaming Gorge",reg:"Uinta Basin",species:["Lake Trout","Smallmouth Bass","Kokanee Salmon","Rainbow Trout"],rating:4.7,ratings:[5,5,4,5,5],catches:89,by:"DeepDropper",desc:"Trophy lake trout. Green River below dam is world-class." },
+  { id:"s5",name:"Fish Lake",reg:"Central Utah",species:["Lake Trout","Splake","Rainbow Trout","Tiger Trout"],rating:4.2,ratings:[4,4,5,4],catches:35,by:"TrophyHunter",desc:"Excellent splake and tiger trout. Trolling spoons along drop-offs." },
+];
+
+const CATCHES0 = [
+  { id:"c1",user:"FlyRodKing",sid:"s2",species:"Brown Trout",qty:8,date:"2026-03-30",notes:"BWO hatch 1pm. Size 22 parachute.",meth:"Dry Fly" },
+  { id:"c2",user:"FlyRodKing",sid:"s2",species:"Rainbow Trout",qty:4,date:"2026-03-28",notes:"Sow bugs bounce rig.",meth:"Nymph" },
+  { id:"c3",user:"DeepDropper",sid:"s4",species:"Lake Trout",qty:3,date:"2026-03-27",notes:"Tube jigs 95ft. Biggest 28in.",meth:"Jigging" },
+  { id:"c4",user:"TrailMaster",sid:"s1",species:"Cutthroat Trout",qty:6,date:"2026-03-26",notes:"PowerBait at Soldier Creek.",meth:"Bait" },
+  { id:"c5",user:"BassBandit",sid:"s3",species:"Smallmouth Bass",qty:5,date:"2026-03-25",notes:"Drop shot rocky points.",meth:"Lure" },
+  { id:"c6",user:"TrophyHunter",sid:"s5",species:"Splake",qty:4,date:"2026-03-24",notes:"Silver spoons 30ft.",meth:"Trolling" },
+  { id:"c7",user:"DeepDropper",sid:"s4",species:"Rainbow Trout",qty:12,date:"2026-03-22",notes:"Green River scuds on 5x.",meth:"Nymph" },
+  { id:"c8",user:"FlyRodKing",sid:"s2",species:"Brown Trout",qty:6,date:"2026-03-20",notes:"Olive bugger evening pools.",meth:"Streamer" },
+  { id:"c9",user:"TrailMaster",sid:"s1",species:"Rainbow Trout",qty:8,date:"2026-03-18",notes:"Chironomids near inlet.",meth:"Fly" },
+  { id:"c10",user:"BassBandit",sid:"s2",species:"Rainbow Trout",qty:3,date:"2026-03-15",notes:"Egg patterns.",meth:"Nymph" },
+  { id:"c11",user:"DeepDropper",sid:"s4",species:"Lake Trout",qty:5,date:"2026-03-12",notes:"Airplane jigs 110ft.",meth:"Jigging" },
+  { id:"c12",user:"TrophyHunter",sid:"s5",species:"Tiger Trout",qty:2,date:"2026-03-10",notes:"Gold Kastmaster.",meth:"Trolling" },
+  { id:"c13",user:"FlyRodKing",sid:"s2",species:"Mountain Whitefish",qty:10,date:"2026-03-08",notes:"Sow bugs through riffles.",meth:"Nymph" },
+];
+
+const SP_OPT=["Rainbow Trout","Brown Trout","Cutthroat Trout","Brook Trout","Lake Trout","Tiger Trout","Splake","Kokanee Salmon","Smallmouth Bass","Largemouth Bass","Walleye","Yellow Perch","Channel Catfish","Bluegill","Wiper","Mountain Whitefish","Other"];
+const ME_OPT=["Dry Fly","Nymph","Streamer","Bait","Lure","Jigging","Trolling","Fly","Spin","Ice Fishing","Other"];
+const REGS=["All Regions","Wasatch","Uinta Basin","Central Utah","Southern Utah","Northern Utah"];
+
+// Stone Creek palette — outdoorsy blue with natural tones
+const $={
+  bg:"#0c1a2b",       // deep night water
+  bg2:"#0f1f32",      // header
+  cd:"#132639",       // cards
+  cdH:"#1a3350",      // card hover
+  inp:"#0e1926",      // inputs
+  a:"#4a9fd4",        // river blue (primary)
+  aD:"#2a6f9e",       // deep blue
+  aL:"#6db8e8",       // light blue
+  w:"#d4915a",        // warm campfire orange
+  wD:"#8b5e3c",       // leather brown
+  g:"#5ab07a",        // pine green
+  gD:"#2d6e4a",       // deep forest
+  r:"#cf5c5c",        // muted red
+  pro:"#8b7ec8",      // muted purple
+  proD:"#5f4f99",
+  stone:"#8a9bae",    // stone gray accent
+  tx:"#dde4eb",       // text
+  dm:"#7b8fa6",       // dim text
+  mt:"#4a5f75",       // muted text
+  bd:"#1e3348",       // borders
+  sf:"#162c42",       // surface
+};
+const MO=new Date().getMonth();
+const F="'Barlow',sans-serif",FD="'Bitter',serif";
+const lbl={fontSize:10,fontWeight:600,color:$.dm,textTransform:"uppercase",letterSpacing:1.2,display:"block",marginBottom:4,marginTop:10};
+const ipt={width:"100%",background:$.inp,border:`1px solid ${$.bd}`,color:$.tx,padding:"9px 12px",borderRadius:8,fontFamily:F,fontSize:13,outline:"none",boxSizing:"border-box"};
+
+function App(){
+  const[user,setUser]=useState(null);
+  const[view,setView]=useState("spots");
+  const[spots,setSpots]=useState(SPOTS0);
+  const[catches,setCatches]=useState(CATCHES0);
+  const[loading,setLoading]=useState(true);
+  const[sel,setSel]=useState(null);
+  const[modal,setModal]=useState(null);
+  const[filter,setFilter]=useState("All Regions");
+  const[sort,setSort]=useState("rating");
+  const[isPro,setIsPro]=useState(false);
+  const[auth,setAuth]=useState({username:"",email:"",password:""});
+  const[signUp,setSignUp]=useState(false);
+
+  useEffect(()=>{(async()=>{
+    try{const r=await storage.get(SK.USER);if(r?.value)setUser(JSON.parse(r.value));}catch{}
+    try{const r=await storage.get(SK.SPOTS);if(r?.value){const d=JSON.parse(r.value);if(d.length)setSpots(d);}}catch{}
+    try{const r=await storage.get(SK.CATCHES);if(r?.value){const d=JSON.parse(r.value);if(d.length)setCatches(d);}}catch{}
+    try{const r=await storage.get(SK.PRO);if(r?.value)setIsPro(JSON.parse(r.value));}catch{}
+    setLoading(false);
+  })();},[]);
+
+  const sv=async(k,d,fn)=>{fn(d);try{await storage.set(k,JSON.stringify(d));}catch{}};
+  const login=async()=>{if(!auth.username.trim())return;const u={username:auth.username.trim(),email:auth.email,joined:new Date().toISOString()};setUser(u);try{await storage.set(SK.USER,JSON.stringify(u));}catch{}};
+  const goPro=async()=>{setIsPro(true);try{await storage.set(SK.PRO,JSON.stringify(true));}catch{}};
+
+  if(loading)return <div style={{background:$.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F}}><link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Bitter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/><div style={{color:$.a,fontSize:15}}>Loading Stone Creek...</div></div>;
+
+  // AUTH SCREEN
+  if(!user)return(
+    <div style={{background:$.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F,position:"relative",overflow:"hidden"}}>
+      <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Bitter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+      <div style={{position:"absolute",top:-120,right:-80,width:400,height:400,borderRadius:"50%",background:`radial-gradient(circle,${$.aD}12,transparent 70%)`}}/>
+      <div style={{position:"absolute",bottom:-100,left:-60,width:350,height:350,borderRadius:"50%",background:`radial-gradient(circle,${$.gD}15,transparent 70%)`}}/>
+      <div style={{width:"100%",maxWidth:400,padding:20,zIndex:1}}>
+        <div style={{textAlign:"center",marginBottom:40}}>
+          <div style={{fontSize:20,letterSpacing:4,color:$.stone,marginBottom:8}}>🪨</div>
+          <h1 style={{fontFamily:FD,fontSize:36,fontWeight:800,margin:0,color:$.tx,letterSpacing:-0.5}}>Stone Creek</h1>
+          <p style={{fontFamily:FD,color:$.w,fontSize:14,marginTop:2,fontWeight:500,fontStyle:"italic"}}>Fishing</p>
+          <p style={{color:$.dm,fontSize:11,marginTop:10,letterSpacing:2,textTransform:"uppercase"}}>Know the water before you go</p>
+        </div>
+        <div style={{background:$.cd,borderRadius:14,padding:28,border:`1px solid ${$.bd}`}}>
+          <h2 style={{fontFamily:FD,fontSize:18,margin:"0 0 20px",color:$.tx}}>{signUp?"Join the Creek":"Welcome Back"}</h2>
+          {[{l:"USERNAME",k:"username",ph:"angler_name"},...(signUp?[{l:"EMAIL",k:"email",ph:"you@email.com",ty:"email"}]:[]),{l:"PASSWORD",k:"password",ph:"••••••••",ty:"password"}].map(f=>(
+            <div key={f.k} style={{marginBottom:14}}>
+              <label style={{...lbl,marginTop:0}}>{f.l}</label>
+              <input value={auth[f.k]} onChange={e=>setAuth({...auth,[f.k]:e.target.value})} placeholder={f.ph} type={f.ty||"text"} onKeyDown={e=>e.key==="Enter"&&login()} style={ipt}/>
+            </div>
+          ))}
+          <button onClick={login} style={{width:"100%",background:`linear-gradient(135deg,${$.a},${$.aD})`,border:"none",color:"#fff",padding:"13px",borderRadius:10,cursor:"pointer",fontFamily:F,fontSize:15,fontWeight:600,marginTop:4}}>{signUp?"Create Account":"Sign In"}</button>
+          <div style={{textAlign:"center",marginTop:16,fontSize:13,color:$.dm}}>{signUp?"Have an account?":"New here?"}{" "}<span onClick={()=>setSignUp(!signUp)} style={{color:$.a,cursor:"pointer",fontWeight:500}}>{signUp?"Sign In":"Join Free"}</span></div>
+        </div>
+        <p style={{textAlign:"center",marginTop:20,fontSize:10,color:$.mt}}>Free forever · Community-powered fishing intel</p>
+      </div>
+    </div>
+  );
+
+  const fSpots=spots.filter(s=>filter==="All Regions"||s.reg===filter).sort((a,b)=>sort==="rating"?b.rating-a.rating:sort==="catches"?b.catches-a.catches:a.name.localeCompare(b.name));
+
+  return(
+    <div style={{background:$.bg,minHeight:"100vh",fontFamily:F,color:$.tx}}>
+      <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Bitter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+      {/* HEADER */}
+      <header style={{background:$.bg2,borderBottom:`1px solid ${$.bd}`,padding:"0 20px",position:"sticky",top:0,zIndex:100}}>
+        <div style={{maxWidth:1100,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={()=>{setView("spots");setSel(null);}}>
+            <span style={{fontSize:16,color:$.stone}}>🪨</span>
+            <div style={{lineHeight:1}}>
+              <span style={{fontFamily:FD,fontSize:17,fontWeight:700,color:$.tx}}>Stone Creek</span>
+              <span style={{fontFamily:FD,fontSize:11,color:$.w,marginLeft:6,fontStyle:"italic",fontWeight:500}}>Fishing</span>
+            </div>
+          </div>
+          <nav style={{display:"flex",gap:2}}>
+            {[{k:"spots",l:"Spots",i:"📍"},{k:"log",l:"My Catches",i:"📋"},{k:"board",l:"Board",i:"🏆"},{k:"deals",l:"Gear",i:"🛒"},{k:"feed",l:"Feed",i:"📊"}].map(n=>(
+              <button key={n.k} onClick={()=>{setView(n.k);setSel(null);}} style={{
+                background:view===n.k?$.aD+"30":"transparent",border:view===n.k?`1px solid ${$.aD}44`:"1px solid transparent",
+                color:view===n.k?$.aL:$.dm,padding:"6px 11px",borderRadius:8,cursor:"pointer",fontFamily:F,fontSize:12,fontWeight:500,display:"flex",alignItems:"center",gap:4
+              }}><span style={{fontSize:12}}>{n.i}</span>{n.l}</button>
+            ))}
+          </nav>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            {isPro&&<span style={{background:$.proD+"35",color:$.pro,padding:"3px 8px",borderRadius:8,fontSize:9,fontWeight:600,border:`1px solid ${$.proD}50`,letterSpacing:1}}>PRO</span>}
+            {!isPro&&<button onClick={()=>setModal("pro")} style={{background:`linear-gradient(135deg,${$.pro},${$.proD})`,border:"none",color:"#fff",padding:"4px 10px",borderRadius:7,cursor:"pointer",fontFamily:F,fontSize:10,fontWeight:600}}>Go Pro</button>}
+            <span style={{background:$.sf,padding:"4px 10px",borderRadius:12,fontSize:11,color:$.dm}}>👤 {user.username}</span>
+          </div>
+        </div>
+      </header>
+
+      <main style={{maxWidth:1100,margin:"0 auto",padding:"20px 20px 80px"}}>
+        {view==="spots"&&!sel&&<SpotsList spots={fSpots} filter={filter} setFilter={setFilter} sort={sort} setSort={setSort} onSel={setSel} onAdd={()=>setModal("add")} catches={catches}/>}
+        {view==="spots"&&sel&&<Detail spot={sel} onBack={()=>setSel(null)} catches={catches} user={user} spots={spots} saveSpots={d=>sv(SK.SPOTS,d,setSpots)} onLog={()=>setModal("catch")} isPro={isPro} onPro={()=>setModal("pro")}/>}
+        {view==="log"&&<MyCatches uc={catches.filter(x=>x.user===user.username)} spots={spots} onLog={()=>setModal("catch")} isPro={isPro} onPro={()=>setModal("pro")}/>}
+        {view==="board"&&<Board catches={catches} spots={spots}/>}
+        {view==="deals"&&<Deals isPro={isPro} onPro={()=>setModal("pro")}/>}
+        {view==="feed"&&<Feed catches={catches} spots={spots}/>}
+      </main>
+
+      {modal==="add"&&<AddModal close={()=>setModal(null)} user={user} spots={spots} save={d=>sv(SK.SPOTS,d,setSpots)}/>}
+      {modal==="catch"&&<CatchModal close={()=>setModal(null)} user={user} spots={spots} catches={catches} save={d=>sv(SK.CATCHES,d,setCatches)} sel={sel}/>}
+      {modal==="pro"&&<ProModal close={()=>setModal(null)} go={goPro}/>}
+    </div>
+  );
+}
+
+function ProModal({close,go}){
+  return <Overlay close={close}><div style={{textAlign:"center",marginBottom:24}}>
+    <div style={{fontSize:44,marginBottom:6}}>⚡</div>
+    <h2 style={{fontFamily:FD,fontSize:24,fontWeight:800,margin:0,color:$.tx}}>Stone Creek <span style={{color:$.pro}}>Pro</span></h2>
+    <p style={{color:$.dm,fontSize:12,marginTop:6}}>Level up your fishing intel</p>
+  </div>
+  <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:24}}>
+    {[{i:"🔔",t:"Real-time Hatch Alerts",d:"Push notifications when hatches fire"},{i:"📈",t:"Catch Analytics",d:"Personal stats & seasonal trends"},{i:"📍",t:"Private Spot Pins",d:"Save secret spots only you see"},{i:"📅",t:"Historical Data",d:"What caught this week last year"},{i:"🏷️",t:"Exclusive Gear Deals",d:"Pro-only brand discounts"},{i:"🚫",t:"No Sponsored Content",d:"Clean, ad-free experience"}].map((f,i)=>(
+      <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start"}}><span style={{fontSize:18}}>{f.i}</span><div><div style={{fontWeight:600,fontSize:12}}>{f.t}</div><div style={{color:$.dm,fontSize:10}}>{f.d}</div></div></div>
+    ))}
+  </div>
+  <div style={{textAlign:"center",marginBottom:14}}><div style={{fontSize:32,fontWeight:800,color:$.tx}}>$7<span style={{fontSize:14,fontWeight:400,color:$.dm}}>/month</span></div><div style={{color:$.dm,fontSize:11}}>Cancel anytime · 7-day free trial</div></div>
+  <button onClick={()=>{go();close();}} style={{width:"100%",background:`linear-gradient(135deg,${$.pro},${$.proD})`,border:"none",color:"#fff",padding:"13px",borderRadius:10,cursor:"pointer",fontFamily:F,fontSize:15,fontWeight:700}}>Start Free Trial</button>
+  <button onClick={close} style={{width:"100%",background:"transparent",border:"none",color:$.dm,padding:"10px",cursor:"pointer",fontFamily:F,fontSize:12,marginTop:6}}>Maybe later</button>
+  </Overlay>;
+}
+
+function Overlay({close,children}){
+  return <div style={{position:"fixed",inset:0,background:"#000b",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}} onClick={close}>
+    <div onClick={e=>e.stopPropagation()} style={{background:$.cd,borderRadius:16,padding:28,border:`1px solid ${$.bd}`,maxWidth:440,width:"100%",maxHeight:"85vh",overflowY:"auto"}}>{children}</div>
+  </div>;
+}
+
+function SpotsList({spots,filter,setFilter,sort,setSort,onSel,onAdd,catches}){
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+      <div>
+        <h2 style={{fontFamily:FD,fontSize:24,fontWeight:700,margin:0}}>Fishing Spots</h2>
+        <p style={{color:$.dm,marginTop:2,fontSize:12}}>Tap any spot for intel, guides & gear</p>
+      </div>
+      <button onClick={onAdd} style={{background:`linear-gradient(135deg,${$.g},${$.gD})`,border:"none",color:"#fff",padding:"9px 16px",borderRadius:9,cursor:"pointer",fontFamily:F,fontSize:12,fontWeight:600}}>+ Add Spot</button>
+    </div>
+    <div style={{display:"flex",gap:8,marginBottom:16}}>
+      <select value={filter} onChange={e=>setFilter(e.target.value)} style={ddSt}>{REGS.map(r=><option key={r}>{r}</option>)}</select>
+      <select value={sort} onChange={e=>setSort(e.target.value)} style={ddSt}><option value="rating">Top Rated</option><option value="catches">Most Catches</option><option value="name">A-Z</option></select>
+    </div>
+    <div style={{background:`linear-gradient(135deg,${$.cd},${$.aD}0c)`,borderRadius:10,padding:"12px 16px",border:`1px solid ${$.bd}`,marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:20}}>🪰</span><div><div style={{fontSize:12,fontWeight:600}}>Spring hatch season is here</div><div style={{color:$.dm,fontSize:10}}>BWOs firing on the Provo. Book a guided trip.</div></div></div>
+      <span style={{fontSize:8,color:$.mt,textTransform:"uppercase",letterSpacing:1}}>Sponsored</span>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(310px,1fr))",gap:12}}>
+      {spots.map(sp=>{const img=IMG[sp.name];const hd=HATCH[sp.name];const sc=catches.filter(x=>x.sid===sp.id);const guides=GUIDES[sp.id];
+        return <div key={sp.id} onClick={()=>onSel(sp)} style={{background:$.cd,borderRadius:12,border:`1px solid ${$.bd}`,cursor:"pointer",overflow:"hidden",transition:"all .2s"}}
+          onMouseEnter={e=>{e.currentTarget.style.borderColor=$.aD;e.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={e=>{e.currentTarget.style.borderColor=$.bd;e.currentTarget.style.transform="none";}}>
+          {img&&<div style={{height:120,background:`url(${img}) center/cover`,position:"relative"}}>
+            <div style={{position:"absolute",inset:0,background:"linear-gradient(transparent 25%,#132639ee)"}}/>
+            <div style={{position:"absolute",bottom:8,left:12,display:"flex",gap:5}}>
+              <span style={{background:"#0008",backdropFilter:"blur(4px)",padding:"2px 8px",borderRadius:10,color:$.w,fontSize:12,fontWeight:600}}>★ {sp.rating.toFixed(1)}</span>
+              {hd?.cur&&<span style={{background:"#0008",backdropFilter:"blur(4px)",color:hd.cur.status==="Good"?$.g:$.w,fontSize:10,padding:"3px 7px",borderRadius:8,fontWeight:600}}>{hd.cur.status}</span>}
+            </div>
+            {guides&&<span style={{position:"absolute",top:8,right:10,background:$.w+"dd",color:"#1a1a1a",fontSize:8,padding:"2px 7px",borderRadius:5,fontWeight:700,letterSpacing:0.5}}>GUIDES</span>}
+          </div>}
+          <div style={{padding:"12px 16px 14px"}}>
+            <h3 style={{margin:0,fontSize:15,fontWeight:600}}>{sp.name}</h3>
+            <span style={{fontSize:10,color:$.dm}}>{sp.reg}</span>
+            <div style={{display:"flex",gap:4,flexWrap:"wrap",margin:"8px 0"}}>
+              {sp.species.slice(0,3).map(s=><span key={s} style={{background:$.aD+"1a",color:$.a,fontSize:9,padding:"2px 7px",borderRadius:6,fontWeight:500,border:`1px solid ${$.aD}25`}}>{s}</span>)}
+            </div>
+            {hd?.active?.length>0&&<div style={{background:$.gD+"15",borderRadius:6,padding:"5px 10px",marginBottom:8,border:`1px solid ${$.gD}25`}}>
+              <span style={{fontSize:9,fontWeight:600,color:$.g}}>🪰 HATCHING: </span>
+              <span style={{fontSize:10,color:$.dm}}>{hd.active.map(h=>`${h.name} ${h.size}`).join(" · ")}</span>
+            </div>}
+            <div style={{display:"flex",justifyContent:"space-between",paddingTop:8,borderTop:`1px solid ${$.bd}`,fontSize:10,color:$.dm}}>
+              <span>🎣 {sp.catches+sc.length} catches</span><span>by {sp.by}</span>
+            </div>
+          </div>
+        </div>;
+      })}
+    </div>
+  </div>;
+}
+
+function Detail({spot,onBack,catches,user,spots,saveSpots,onLog,isPro,onPro}){
+  const[tab,setTab]=useState("intel");const[rat,setRat]=useState(0);const[hov,setHov]=useState(0);const[cmt,setCmt]=useState("");
+  const[revs,setRevs]=useState([
+    {user:"FlyRodKing",r:5,c:"Stellar. 12 browns on dries.",d:"2026-03-28"},
+    {user:"TrailMaster",r:5,c:"Best spot in Utah. Never disappoints.",d:"2026-03-20"},
+    {user:"BassBandit",r:4,c:"Good numbers, nothing huge. Try south bend.",d:"2026-03-15"},
+  ]);
+  const hd=HATCH[spot.name];const img=IMG[spot.name];const sc=catches.filter(x=>x.sid===spot.id);
+  const guides=GUIDES[spot.id]||[];const gear=GEAR[spot.id]||[];
+  const lb={};sc.forEach(x=>{if(!lb[x.user])lb[x.user]={t:0,sp:new Set(),me:new Set()};lb[x.user].t+=x.qty;lb[x.user].sp.add(x.species);lb[x.user].me.add(x.meth);});
+  const leaders=Object.entries(lb).map(([u,d])=>({user:u,total:d.t,species:d.sp.size,methods:[...d.me].join(", ")})).sort((a,b)=>b.total-a.total);
+  const spC={};sc.forEach(x=>{spC[x.species]=(spC[x.species]||0)+x.qty;});const spR=Object.entries(spC).sort((a,b)=>b[1]-a[1]);const mx=spR[0]?.[1]||1;
+  const meC={};sc.forEach(x=>{meC[x.meth]=(meC[x.meth]||0)+x.qty;});const meR=Object.entries(meC).sort((a,b)=>b[1]-a[1]);
+
+  const tabs=[{k:"intel",l:"🪰 Intel"},{k:"guides",l:"🎣 Guides"},{k:"gear",l:"🛒 Gear"},{k:"board",l:"🏆 Board"},{k:"catch",l:"🐟 Caught"},{k:"rev",l:"⭐ Reviews"}];
+
+  return <div>
+    <button onClick={onBack} style={{background:"transparent",border:"none",color:$.a,cursor:"pointer",fontFamily:F,fontSize:12,marginBottom:12,padding:0}}>← Back to Spots</button>
+    <div style={{borderRadius:14,overflow:"hidden",marginBottom:16,position:"relative"}}>
+      {img&&<div style={{height:170,background:`url(${img}) center/cover`}}><div style={{position:"absolute",inset:0,background:"linear-gradient(transparent 15%,#0c1a2bee)"}}/></div>}
+      <div style={{position:img?"absolute":"relative",bottom:0,left:0,right:0,padding:"14px 20px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end"}}>
+          <div>
+            <h2 style={{fontFamily:FD,fontSize:24,fontWeight:700,margin:0}}>{spot.name}</h2>
+            <span style={{color:$.dm,fontSize:11}}>{spot.reg} · by {spot.by}</span>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <span style={{background:"#0006",backdropFilter:"blur(4px)",padding:"4px 10px",borderRadius:10,color:$.w,fontSize:15,fontWeight:700}}>★ {spot.rating.toFixed(1)}</span>
+            <button onClick={onLog} style={{background:$.g,border:"none",color:"#fff",padding:"7px 14px",borderRadius:8,cursor:"pointer",fontFamily:F,fontWeight:600,fontSize:12}}>+ Log Catch</button>
+          </div>
+        </div>
+        <p style={{color:$.dm,fontSize:11,lineHeight:1.5,margin:"6px 0 0",maxWidth:600}}>{spot.desc}</p>
+      </div>
+    </div>
+
+    {hd?.cur&&<div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:14}}>
+      {[{l:"Status",v:hd.cur.status,c:hd.cur.status==="Good"?$.g:$.w},{l:"Flow",v:hd.cur.flow,c:$.a},{l:"Temp",v:hd.cur.temp,c:$.a},{l:"Catches",v:spot.catches+sc.length,c:$.w}].map((s,i)=>(
+        <div key={i} style={{background:$.cd,borderRadius:8,padding:"10px 12px",border:`1px solid ${$.bd}`,textAlign:"center"}}><div style={{fontSize:16,fontWeight:700,color:s.c}}>{s.v}</div><div style={{fontSize:9,color:$.dm,marginTop:2}}>{s.l}</div></div>
+      ))}
+    </div>}
+
+    <div style={{display:"flex",gap:2,marginBottom:14,borderBottom:`1px solid ${$.bd}`,overflowX:"auto"}}>
+      {tabs.map(t=><button key={t.k} onClick={()=>setTab(t.k)} style={{background:"transparent",border:"none",borderBottom:tab===t.k?`2px solid ${$.a}`:"2px solid transparent",color:tab===t.k?$.aL:$.dm,padding:"7px 12px",cursor:"pointer",fontFamily:F,fontSize:11,fontWeight:500,whiteSpace:"nowrap"}}>{t.l}</button>)}
+    </div>
+
+    {tab==="intel"&&hd&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+      <Card><h3 style={h3}>🪰 Hatching Now</h3>{hd.active.map((h,i)=><div key={i} style={{padding:"7px 0",borderBottom:i<hd.active.length-1?`1px solid ${$.bd}`:"none"}}>
+        <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontWeight:600,fontSize:12}}>{h.name}</span><span style={{color:$.dm,fontSize:10}}>{h.size} · {h.time}</span></div>
+        <div style={{color:$.mt,fontSize:10,marginTop:2}}>{h.note}</div>
+      </div>)}</Card>
+      <Card><h3 style={h3}>🎣 What to Use</h3>{hd.tactics.map((tc,i)=><div key={i} style={{marginBottom:10}}>
+        <div style={{fontSize:10,fontWeight:600,color:$.a,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>{tc.type}</div>
+        {tc.flies.map((f,j)=><div key={j} style={{fontSize:10,color:$.dm,padding:"1px 0 1px 10px",position:"relative"}}><span style={{position:"absolute",left:0,color:$.mt}}>›</span>{f}</div>)}
+      </div>)}
+      {hd.tip&&<div style={{background:$.wD+"18",borderRadius:7,padding:"7px 10px",marginTop:8,borderLeft:`3px solid ${$.w}`}}>
+        <div style={{fontSize:9,fontWeight:600,color:$.w,textTransform:"uppercase",marginBottom:2}}>Pro Tip</div>
+        <div style={{fontSize:10,color:$.dm,lineHeight:1.4}}>{hd.tip}</div>
+      </div>}</Card>
+      <Card style={{gridColumn:"1/-1"}}><h3 style={h3}>📅 Hatch Calendar</h3>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(12,1fr)",gap:3}}>
+          {hd.cal.map((m,i)=><div key={m.m} style={{background:i===MO?$.aD+"28":$.sf,borderRadius:6,padding:"6px 2px",textAlign:"center",border:i===MO?`1px solid ${$.a}44`:`1px solid ${$.bd}`}}>
+            <div style={{fontSize:9,fontWeight:600,color:i===MO?$.aL:$.dm,marginBottom:3}}>{m.m}</div>
+            {m.b.map((b,j)=><div key={j} style={{fontSize:7,color:$.dm,lineHeight:1.3}}>{b}</div>)}
+          </div>)}
+        </div>
+        {!isPro&&<div style={{marginTop:10,background:$.proD+"12",borderRadius:7,padding:"7px 10px",border:`1px solid ${$.proD}25`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontSize:10,color:$.dm}}>⚡ <span style={{color:$.pro,fontWeight:600}}>Pro:</span> Get push alerts when hatches fire</span>
+          <button onClick={onPro} style={proBtn}>Upgrade</button>
+        </div>}
+      </Card>
+    </div>}
+    {tab==="intel"&&!hd&&<Card style={{textAlign:"center",padding:32}}><span style={{fontSize:32}}>🪰</span><p style={{color:$.dm,marginTop:8}}>No hatch data yet.</p></Card>}
+
+    {tab==="guides"&&<div>{guides.length===0?<Card style={{textAlign:"center",padding:32}}><span style={{fontSize:32}}>🎣</span><p style={{color:$.dm,marginTop:8}}>No guides listed yet.</p></Card>:
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        {guides.map((g,i)=><Card key={i} style={{border:`1px solid ${g.featured?$.w+"35":$.bd}`}}>
+          {g.featured&&<span style={{position:"absolute",top:12,right:14,background:$.w+"1a",color:$.w,fontSize:9,padding:"2px 8px",borderRadius:6,fontWeight:600,border:`1px solid ${$.w}25`}}>⭐ FEATURED</span>}
+          <div style={{display:"flex",gap:14}}>
+            <div style={{width:52,height:52,borderRadius:10,background:$.sf,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{g.img}</div>
+            <div style={{flex:1}}>
+              <h3 style={{margin:0,fontSize:15,fontWeight:600}}>{g.name}</h3>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginTop:3}}><span style={{color:$.w,fontSize:12}}>★ {g.rating}</span><span style={{color:$.dm,fontSize:10}}>({g.reviews})</span><span style={{color:$.g,fontSize:12,fontWeight:600}}>{g.price}</span></div>
+              <p style={{color:$.dm,fontSize:11,margin:"5px 0"}}>{g.tagline}</p>
+              <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:6}}>{g.specialties.map(s=><span key={s} style={{background:$.aD+"18",color:$.a,fontSize:9,padding:"2px 6px",borderRadius:5,border:`1px solid ${$.aD}20`}}>{s}</span>)}</div>
+              {g.discount&&<div style={{background:$.gD+"18",borderRadius:5,padding:"4px 8px",display:"inline-block",marginBottom:6,border:`1px solid ${$.gD}25`}}><span style={{color:$.g,fontSize:10,fontWeight:600}}>🎁 {g.discount}</span></div>}
+              <div style={{display:"flex",gap:8}}><button style={{background:$.a,border:"none",color:"#fff",padding:"7px 14px",borderRadius:7,cursor:"pointer",fontFamily:F,fontSize:11,fontWeight:600}}>Book Trip</button><button style={{background:$.sf,border:`1px solid ${$.bd}`,color:$.dm,padding:"7px 12px",borderRadius:7,cursor:"pointer",fontFamily:F,fontSize:10}}>📞 {g.phone}</button></div>
+            </div>
+          </div>
+        </Card>)}
+        <div style={{background:$.sf,borderRadius:8,padding:"10px 14px",border:`1px dashed ${$.bd}`,textAlign:"center"}}><span style={{fontSize:11,color:$.dm}}>Are you a guide? </span><span style={{fontSize:11,color:$.a,cursor:"pointer",fontWeight:500}}>List on Stone Creek →</span></div>
+      </div>}
+    </div>}
+
+    {tab==="gear"&&<div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:10}}>
+        {gear.map((g,i)=><Card key={i} style={{padding:14}}>
+          {g.hot&&<span style={{position:"absolute",top:8,right:8,background:$.r+"1a",color:$.r,fontSize:8,padding:"2px 6px",borderRadius:5,fontWeight:600,border:`1px solid ${$.r}20`}}>🔥 HOT</span>}
+          {g.sponsor&&<span style={{fontSize:8,color:$.w,fontWeight:500}}>{g.sponsor}</span>}
+          <div style={{fontSize:9,color:$.dm,textTransform:"uppercase",letterSpacing:1,marginBottom:3,marginTop:g.sponsor?2:0}}>{g.cat}</div>
+          <div style={{fontSize:12,fontWeight:500,marginBottom:6}}>{g.name}</div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:15,fontWeight:700,color:$.g}}>{g.price}</span><button style={{background:$.a,border:"none",color:"#fff",padding:"5px 12px",borderRadius:6,cursor:"pointer",fontFamily:F,fontSize:10,fontWeight:600}}>Shop →</button></div>
+        </Card>)}
+      </div>
+      <div style={{marginTop:10,fontSize:9,color:$.mt,textAlign:"center"}}>Affiliate links support Stone Creek at no extra cost</div>
+      {!isPro&&<div style={{marginTop:12,background:$.proD+"12",borderRadius:8,padding:"9px 12px",border:`1px solid ${$.proD}25`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span style={{fontSize:10,color:$.dm}}>⚡ <span style={{color:$.pro,fontWeight:600}}>Pro</span> members get exclusive gear discounts</span>
+        <button onClick={onPro} style={proBtn}>Upgrade</button>
+      </div>}
+    </div>}
+
+    {tab==="board"&&<Card><h3 style={h3}>🏆 Top Anglers — {spot.name}</h3>
+      {leaders.length===0?<p style={{color:$.dm,textAlign:"center"}}>No catches yet.</p>:
+        leaders.map((l,i)=><div key={l.user} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:i<leaders.length-1?`1px solid ${$.bd}`:"none"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:i<3?18:12,width:26,textAlign:"center",fontWeight:700,color:$.dm}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}</span>
+          <div><div style={{fontWeight:600,fontSize:13}}>{l.user}</div><div style={{color:$.dm,fontSize:9}}>{l.species} species · {l.methods}</div></div></div>
+          <div style={{textAlign:"right"}}><div style={{fontSize:18,fontWeight:700,color:i===0?$.w:$.a}}>{l.total}</div><div style={{color:$.mt,fontSize:8,textTransform:"uppercase"}}>fish</div></div>
+        </div>)}
+    </Card>}
+
+    {tab==="catch"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+      <Card><h3 style={h3}>Species Breakdown</h3>{spR.length===0?<p style={{color:$.dm}}>No data yet.</p>:spR.map(([sp,cnt])=><div key={sp} style={{marginBottom:10}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:12}}>{sp}</span><span style={{color:$.a,fontWeight:600,fontSize:11}}>{cnt}</span></div>
+        <div style={{background:$.sf,borderRadius:4,height:5}}><div style={{background:`linear-gradient(90deg,${$.a},${$.g})`,height:"100%",width:`${(cnt/mx)*100}%`,borderRadius:4}}/></div>
+      </div>)}</Card>
+      <Card><h3 style={h3}>Methods That Work</h3>{meR.length===0?<p style={{color:$.dm}}>No data yet.</p>:meR.map(([m,cnt])=><div key={m} style={{marginBottom:10}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:12}}>{m}</span><span style={{color:$.w,fontWeight:600,fontSize:11}}>{cnt}</span></div>
+        <div style={{background:$.sf,borderRadius:4,height:5}}><div style={{background:`linear-gradient(90deg,${$.w},${$.wD})`,height:"100%",width:`${(cnt/(meR[0]?.[1]||1))*100}%`,borderRadius:4}}/></div>
+      </div>)}
+      <div style={{marginTop:12,paddingTop:10,borderTop:`1px solid ${$.bd}`}}>
+        <div style={{fontSize:10,fontWeight:600,color:$.dm,marginBottom:6}}>Recent Reports</div>
+        {sc.slice(-5).reverse().map((x,i)=><div key={i} style={{fontSize:10,color:$.dm,padding:"4px 0"}}><span style={{fontWeight:500}}>{x.user}</span> · {x.qty} {x.species} · {x.meth} <span style={{color:$.mt}}>· {x.date}</span>{x.notes&&<div style={{color:$.mt,fontSize:9,fontStyle:"italic"}}>{x.notes}</div>}</div>)}
+      </div></Card>
+    </div>}
+
+    {tab==="rev"&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+      <Card><h3 style={h3}>Rate This Spot</h3>
+        <div style={{display:"flex",gap:4,marginBottom:10}}>{[1,2,3,4,5].map(s=><span key={s} onClick={()=>setRat(s)} onMouseEnter={()=>setHov(s)} onMouseLeave={()=>setHov(0)} style={{fontSize:22,cursor:"pointer",color:s<=(hov||rat)?$.w:$.mt}}>★</span>)}</div>
+        <textarea value={cmt} onChange={e=>setCmt(e.target.value)} placeholder="Tips, conditions..." rows={3} style={{...ipt,resize:"vertical"}}/>
+        <button onClick={()=>{if(!rat)return;setRevs([{user:user.username,r:rat,c:cmt.trim(),d:new Date().toISOString().split("T")[0]},...revs]);const up=spots.map(s=>{if(s.id===spot.id){const nr=[...s.ratings,rat];return{...s,ratings:nr,rating:nr.reduce((a,b)=>a+b)/nr.length};}return s;});saveSpots(up);setRat(0);setCmt("");}} style={{background:$.w,border:"none",color:"#fff",padding:"8px 14px",borderRadius:7,cursor:"pointer",fontFamily:F,fontWeight:600,fontSize:11,marginTop:8}}>Submit</button>
+      </Card>
+      <Card style={{maxHeight:300,overflowY:"auto"}}><h3 style={h3}>Reviews ({revs.length})</h3>
+        {revs.map((r,i)=><div key={i} style={{padding:"6px 0",borderBottom:i<revs.length-1?`1px solid ${$.bd}`:"none"}}>
+          <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontWeight:600,fontSize:11}}>👤 {r.user}</span><div>{[1,2,3,4,5].map(s=><span key={s} style={{color:s<=r.r?$.w:$.mt,fontSize:9}}>★</span>)}</div></div>
+          {r.c&&<p style={{color:$.dm,fontSize:10,lineHeight:1.4,margin:"2px 0"}}>{r.c}</p>}
+          <span style={{color:$.mt,fontSize:8}}>{r.d}</span>
+        </div>)}
+      </Card>
+    </div>}
+  </div>;
+}
+
+function MyCatches({uc,spots,onLog,isPro,onPro}){
+  const nm=id=>spots.find(s=>s.id===id)?.name||"Unknown";const tot=uc.reduce((a,x)=>a+x.qty,0);const usp=new Set(uc.map(x=>x.species)).size;
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+      <h2 style={{fontFamily:FD,fontSize:24,fontWeight:700,margin:0}}>My Catches</h2>
+      <button onClick={onLog} style={{background:`linear-gradient(135deg,${$.g},${$.gD})`,border:"none",color:"#fff",padding:"9px 16px",borderRadius:9,cursor:"pointer",fontFamily:F,fontSize:12,fontWeight:600}}>+ Log Catch</button>
+    </div>
+    {uc.length>0&&<div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
+      <div style={{background:$.cd,borderRadius:8,padding:"10px 14px",border:`1px solid ${$.bd}`,textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:$.a}}>{tot}</div><div style={{fontSize:9,color:$.dm}}>Total Fish</div></div>
+      <div style={{background:$.cd,borderRadius:8,padding:"10px 14px",border:`1px solid ${$.bd}`,textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:$.g}}>{usp}</div><div style={{fontSize:9,color:$.dm}}>Species</div></div>
+      <div style={{background:$.cd,borderRadius:8,padding:"10px 14px",border:`1px solid ${$.bd}`,textAlign:"center"}}><div style={{fontSize:20,fontWeight:700,color:$.w}}>{uc.length}</div><div style={{fontSize:9,color:$.dm}}>Trips</div></div>
+    </div>}
+    {!isPro&&uc.length>0&&<div style={{background:$.proD+"12",borderRadius:8,padding:"9px 12px",border:`1px solid ${$.proD}25`,marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <span style={{fontSize:10,color:$.dm}}>⚡ <span style={{color:$.pro,fontWeight:600}}>Pro:</span> Unlock seasonal trends & personal analytics</span>
+      <button onClick={onPro} style={proBtn}>Upgrade</button>
+    </div>}
+    {uc.length===0?<Card style={{textAlign:"center",padding:36}}><span style={{fontSize:36}}>🎣</span><h3 style={{fontFamily:FD,margin:"8px 0 4px"}}>No catches yet</h3><p style={{color:$.dm,fontSize:12}}>Go fish!</p></Card>:
+      uc.sort((a,b)=>new Date(b.date)-new Date(a.date)).map((x,i)=><div key={i} style={{background:$.cd,borderRadius:10,padding:"12px 16px",border:`1px solid ${$.bd}`,marginBottom:7,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:22}}>🐟</span><div><div style={{fontWeight:600,fontSize:13}}>{x.species}</div><div style={{color:$.dm,fontSize:10}}>📍 {nm(x.sid)} · {x.meth} · {x.date}</div>{x.notes&&<div style={{color:$.mt,fontSize:9,fontStyle:"italic"}}>{x.notes}</div>}</div></div>
+        <div style={{textAlign:"right"}}><div style={{fontSize:18,fontWeight:700,color:$.a}}>{x.qty}</div><div style={{color:$.mt,fontSize:8,textTransform:"uppercase"}}>caught</div></div>
+      </div>)
+    }
+  </div>;
+}
+
+function Board({catches,spots}){
+  const[sf,setSf]=useState("all");const fc=sf==="all"?catches:catches.filter(x=>x.sid===sf);
+  const lb={};fc.forEach(x=>{if(!lb[x.user])lb[x.user]={t:0,sp:new Set(),st:new Set()};lb[x.user].t+=x.qty;lb[x.user].sp.add(x.species);lb[x.user].st.add(x.sid);});
+  const leaders=Object.entries(lb).map(([u,d])=>({user:u,total:d.t,species:d.sp.size,spots:d.st.size})).sort((a,b)=>b.total-a.total);
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+      <h2 style={{fontFamily:FD,fontSize:24,fontWeight:700,margin:0}}>🏆 Leaderboard</h2>
+      <select value={sf} onChange={e=>setSf(e.target.value)} style={ddSt}><option value="all">All Spots</option>{spots.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select>
+    </div>
+    {leaders.map((l,i)=><div key={l.user} style={{background:i<3?$.cdH:$.cd,borderRadius:10,padding:"12px 18px",border:`1px solid ${i<3?$.aD+"35":$.bd}`,marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:i<3?20:12,width:28,textAlign:"center",fontWeight:700,color:$.dm}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}</span><div><div style={{fontWeight:600,fontSize:13}}>{l.user}</div><div style={{color:$.dm,fontSize:9}}>{l.species} species · {l.spots} spots</div></div></div>
+      <div style={{textAlign:"right"}}><div style={{fontSize:20,fontWeight:700,color:i===0?$.w:$.a}}>{l.total}</div><div style={{color:$.mt,fontSize:8,textTransform:"uppercase"}}>fish</div></div>
+    </div>)}
+  </div>;
+}
+
+function Deals({isPro,onPro}){
+  const all=[...Object.values(GEAR)].flat();
+  return <div>
+    <h2 style={{fontFamily:FD,fontSize:24,fontWeight:700,margin:"0 0 4px"}}>🛒 Gear Picks</h2>
+    <p style={{color:$.dm,marginBottom:14,fontSize:12}}>Community-recommended gear for Utah waters</p>
+    {!isPro&&<div style={{background:`linear-gradient(135deg,${$.proD}18,${$.cd})`,borderRadius:12,padding:16,border:`1px solid ${$.proD}35`,marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:24}}>⚡</span><div><div style={{fontWeight:600,fontSize:13,color:$.pro}}>Pro members save 10-20% on partner gear</div><div style={{color:$.dm,fontSize:10,marginTop:2}}>Exclusive deals from top brands</div></div></div>
+      <button onClick={onPro} style={{background:`linear-gradient(135deg,${$.pro},${$.proD})`,border:"none",color:"#fff",padding:"8px 14px",borderRadius:8,cursor:"pointer",fontFamily:F,fontSize:11,fontWeight:600}}>Go Pro</button>
+    </div>}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
+      {all.map((g,i)=><Card key={i} style={{padding:14}}>{g.hot&&<span style={{position:"absolute",top:8,right:8,background:$.r+"18",color:$.r,fontSize:8,padding:"2px 6px",borderRadius:5,fontWeight:600}}>🔥</span>}
+        {g.sponsor&&<span style={{fontSize:8,color:$.w,fontWeight:500}}>{g.sponsor}</span>}
+        <div style={{fontSize:9,color:$.dm,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>{g.cat}</div>
+        <div style={{fontSize:11,fontWeight:500,marginBottom:6}}>{g.name}</div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:14,fontWeight:700,color:$.g}}>{g.price}</span><button style={{background:$.a,border:"none",color:"#fff",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontFamily:F,fontSize:10,fontWeight:600}}>Shop →</button></div>
+      </Card>)}
+    </div>
+  </div>;
+}
+
+function Feed({catches,spots}){
+  const nm=id=>spots.find(s=>s.id===id)?.name||"Unknown";
+  return <div>
+    <h2 style={{fontFamily:FD,fontSize:24,fontWeight:700,margin:"0 0 4px"}}>📊 Community Feed</h2>
+    <p style={{color:$.dm,marginBottom:14,fontSize:12}}>Latest from all anglers</p>
+    {[...catches].sort((a,b)=>new Date(b.date)-new Date(a.date)).map((x,i)=><div key={i} style={{background:$.cd,borderRadius:10,padding:"10px 14px",border:`1px solid ${$.bd}`,marginBottom:6}}>
+      <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:28,height:28,borderRadius:"50%",background:$.aD+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0}}>🐟</div>
+      <div><div style={{fontSize:11}}><span style={{fontWeight:600}}>{x.user}</span> caught <span style={{color:$.a,fontWeight:600}}>{x.qty} {x.species}</span></div><div style={{color:$.dm,fontSize:9}}>📍 {nm(x.sid)} · {x.meth} · {x.date}</div>{x.notes&&<div style={{color:$.mt,fontSize:9,fontStyle:"italic"}}>{x.notes}</div>}</div></div>
+    </div>)}
+  </div>;
+}
+
+function AddModal({close,user,spots,save}){
+  const[f,setF]=useState({name:"",reg:"Wasatch",species:[],desc:""});
+  return <Overlay close={close}>
+    <h2 style={{fontFamily:FD,fontSize:18,margin:"0 0 14px"}}>Add Fishing Spot</h2>
+    <label style={lbl}>SPOT NAME *</label><input value={f.name} onChange={e=>setF({...f,name:e.target.value})} placeholder="e.g. Mirror Lake" style={ipt}/>
+    <label style={lbl}>REGION</label><select value={f.reg} onChange={e=>setF({...f,reg:e.target.value})} style={ipt}>{REGS.filter(r=>r!=="All Regions").map(r=><option key={r}>{r}</option>)}</select>
+    <label style={lbl}>SPECIES *</label><select onChange={e=>{if(e.target.value&&!f.species.includes(e.target.value))setF({...f,species:[...f.species,e.target.value]});e.target.value="";}} style={ipt}><option value="">Select...</option>{SP_OPT.filter(s=>!f.species.includes(s)).map(s=><option key={s}>{s}</option>)}</select>
+    <div style={{display:"flex",gap:4,flexWrap:"wrap",margin:"6px 0 8px"}}>{f.species.map(s=><span key={s} style={{background:$.aD+"1a",color:$.a,fontSize:10,padding:"2px 8px",borderRadius:6,display:"flex",alignItems:"center",gap:3,border:`1px solid ${$.aD}20`}}>{s}<span onClick={()=>setF({...f,species:f.species.filter(x=>x!==s)})} style={{cursor:"pointer",color:$.r}}>×</span></span>)}</div>
+    <label style={lbl}>DESCRIPTION</label><textarea value={f.desc} onChange={e=>setF({...f,desc:e.target.value})} placeholder="Tips, access..." rows={3} style={{...ipt,resize:"vertical"}}/>
+    <div style={{display:"flex",gap:8,marginTop:10}}>
+      <button onClick={()=>{if(!f.name.trim()||!f.species.length)return;save([...spots,{id:"s"+Date.now(),name:f.name.trim(),reg:f.reg,species:f.species,rating:0,ratings:[],catches:0,by:user.username,desc:f.desc.trim()||"No description."}]);close();}} style={{flex:1,background:$.g,border:"none",color:"#fff",padding:"11px",borderRadius:8,cursor:"pointer",fontFamily:F,fontWeight:600,fontSize:12}}>Add Spot</button>
+      <button onClick={close} style={{background:$.sf,border:`1px solid ${$.bd}`,color:$.dm,padding:"11px 18px",borderRadius:8,cursor:"pointer",fontFamily:F,fontSize:12}}>Cancel</button>
+    </div>
+  </Overlay>;
+}
+
+function CatchModal({close,user,spots,catches,save,sel}){
+  const[f,setF]=useState({sid:sel?.id||"",species:"",qty:1,date:new Date().toISOString().split("T")[0],meth:"Nymph",notes:""});const spot=spots.find(s=>s.id===f.sid);
+  return <Overlay close={close}>
+    <h2 style={{fontFamily:FD,fontSize:18,margin:"0 0 14px"}}>🐟 Log a Catch</h2>
+    <label style={lbl}>WHERE</label><select value={f.sid} onChange={e=>setF({...f,sid:e.target.value,species:""})} style={ipt}><option value="">Select...</option>{spots.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+      <div><label style={lbl}>SPECIES</label><select value={f.species} onChange={e=>setF({...f,species:e.target.value})} style={ipt}><option value="">Select...</option>{(spot?.species||SP_OPT).map(s=><option key={s}>{s}</option>)}</select></div>
+      <div><label style={lbl}>METHOD</label><select value={f.meth} onChange={e=>setF({...f,meth:e.target.value})} style={ipt}>{ME_OPT.map(m=><option key={m}>{m}</option>)}</select></div>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+      <div><label style={lbl}>COUNT</label><input type="number" min="1" value={f.qty} onChange={e=>setF({...f,qty:e.target.value})} style={ipt}/></div>
+      <div><label style={lbl}>DATE</label><input type="date" value={f.date} onChange={e=>setF({...f,date:e.target.value})} style={ipt}/></div>
+    </div>
+    <label style={lbl}>NOTES</label><textarea value={f.notes} onChange={e=>setF({...f,notes:e.target.value})} placeholder="Fly/lure, conditions, size..." rows={2} style={{...ipt,resize:"vertical"}}/>
+    <div style={{display:"flex",gap:8,marginTop:10}}>
+      <button onClick={()=>{if(!f.sid||!f.species)return;save([...catches,{...f,user:user.username,qty:parseInt(f.qty)||1,id:"c"+Date.now()}]);close();}} style={{flex:1,background:`linear-gradient(135deg,${$.a},${$.aD})`,border:"none",color:"#fff",padding:"11px",borderRadius:8,cursor:"pointer",fontFamily:F,fontWeight:600,fontSize:12}}>Log Catch</button>
+      <button onClick={close} style={{background:$.sf,border:`1px solid ${$.bd}`,color:$.dm,padding:"11px 18px",borderRadius:8,cursor:"pointer",fontFamily:F,fontSize:12}}>Cancel</button>
+    </div>
+  </Overlay>;
+}
+
+function Card({children,style={}}){return <div style={{background:$.cd,borderRadius:12,padding:16,border:`1px solid ${$.bd}`,position:"relative",...style}}>{children}</div>;}
+const h3={fontFamily:FD,fontSize:15,fontWeight:600,margin:"0 0 10px"};
+const ddSt={background:$.sf,border:`1px solid ${$.bd}`,color:$.tx,padding:"7px 12px",borderRadius:8,fontFamily:F,fontSize:12};
+const proBtn={background:$.pro,border:"none",color:"#fff",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontFamily:F,fontSize:10,fontWeight:600};
+
+
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
