@@ -9,6 +9,8 @@
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<!-- ===== SUPABASE ===== -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { background: #0b1120; }
@@ -21,42 +23,37 @@ select, input, textarea, button { font-family: 'Barlow', sans-serif; }
 <body>
 <div id="root"></div>
 <script type="text/babel">
-// Storage wrapper (uses localStorage for real deployment)
-const storage = {
-  async get(key) { 
-    const v = localStorage.getItem(key); 
-    return v ? { value: v } : null; 
-  },
-  async set(key, value) { 
-    localStorage.setItem(key, value); 
-    return { key, value }; 
-  },
-  async delete(key) { 
-    localStorage.removeItem(key); 
-    return { key, deleted: true }; 
-  }
-};
+// =====================================================
+// ⬇️⬇️⬇️  PASTE YOUR SUPABASE INFO BELOW  ⬇️⬇️⬇️
+// Go to supabase.com → your project → Settings → API
+// =====================================================
+const SUPABASE_URL = 'PASTE_YOUR_PROJECT_URL_HERE';
+const SUPABASE_KEY = 'PASTE_YOUR_ANON_KEY_HERE';
+// =====================================================
+// ⬆️⬆️⬆️  PASTE YOUR SUPABASE INFO ABOVE  ⬆️⬆️⬆️
+// =====================================================
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const { useState, useEffect, useCallback } = React;
 
-const SK = { USER: "sc-user", SPOTS: "sc-spots", CATCHES: "sc-catches", PRO: "sc-pro" };
-
+// Guides data (keyed by spot NAME now, not ID)
 const GUIDES = {
-  "s2": [
+  "Provo River (Middle)": [
     { name: "Park City Fly Fishing", rating: 4.9, reviews: 127, price: "$450/day", specialties: ["Dry Fly", "Nymph", "Walk & Wade"], phone: "435-658-1166", img: "🎣", featured: true, tagline: "Daily hatch reports. All skill levels welcome.", discount: "10% off first trip via Stone Creek" },
     { name: "Wild Utah Fly Fishing", rating: 4.8, reviews: 89, price: "$425/day", specialties: ["Trophy Browns", "Technical Water"], phone: "801-555-0142", img: "🏔️", featured: false, tagline: "Specializing in the Middle Provo since 2012." },
   ],
-  "s1": [
+  "Strawberry Reservoir": [
     { name: "Strawberry Bay Marina Guides", rating: 4.6, reviews: 64, price: "$350/half-day", specialties: ["Trolling", "Shore Fishing", "Boat Rental"], phone: "435-548-2261", img: "🚤", featured: true, tagline: "Full service marina with guided trips.", discount: "Free rod rental with Stone Creek booking" },
   ],
-  "s4": [
+  "Flaming Gorge Reservoir": [
     { name: "Flaming Gorge Trophy Fishing", rating: 4.9, reviews: 203, price: "$500/day", specialties: ["Lake Trout", "Jigging", "Electronics"], phone: "435-555-0198", img: "🐟", featured: true, tagline: "Record-class lake trout specialists.", discount: "15% off weekday trips via Stone Creek" },
     { name: "Green River Outfitters", rating: 4.7, reviews: 156, price: "$475/day", specialties: ["Tailwater", "Drift Boat", "Fly Fishing"], phone: "435-555-0211", img: "🛶", featured: false, tagline: "Float the Green River below Flaming Gorge Dam." },
   ],
 };
 
 const GEAR = {
-  "s2": [
+  "Provo River (Middle)": [
     { name: "Umpqua BWO Parachute #20 (3pk)", price: "$5.97", cat: "Flies", affiliate: true, sponsor: "Umpqua", hot: true },
     { name: "Griffith's Gnat #18 (3pk)", price: "$4.50", cat: "Flies", affiliate: true },
     { name: "Sow Bug Assortment 12pk", price: "$14.99", cat: "Flies", affiliate: true, sponsor: "Umpqua" },
@@ -64,13 +61,13 @@ const GEAR = {
     { name: "Redington Classic Trout 9' 5wt", price: "$129.99", cat: "Rods", affiliate: true, hot: true },
     { name: "Orvis Clearwater Reel II", price: "$89.00", cat: "Reels", affiliate: true, sponsor: "Orvis" },
   ],
-  "s1": [
+  "Strawberry Reservoir": [
     { name: "Berkley PowerBait Chartreuse", price: "$5.49", cat: "Bait", affiliate: true, hot: true },
     { name: "Jake's Spin-a-Lure 1/4oz", price: "$6.99", cat: "Lures", affiliate: true },
     { name: "Rapala Countdown CD07", price: "$9.99", cat: "Lures", affiliate: true },
     { name: "Eagle Claw Spinning Combo 6'6\"", price: "$34.99", cat: "Combos", affiliate: true },
   ],
-  "s4": [
+  "Flaming Gorge Reservoir": [
     { name: "Tube Jig Kit 1/2oz (12pk)", price: "$18.99", cat: "Jigs", affiliate: true, hot: true },
     { name: "Crippled Herring Spoon 3/4oz", price: "$8.49", cat: "Spoons", affiliate: true },
     { name: "Humminbird Helix 7 Finder", price: "$449.99", cat: "Electronics", affiliate: true, sponsor: "Humminbird" },
@@ -114,7 +111,7 @@ const HATCH = {
       { m: "Nov", b: ["Midges"] },{ m: "Dec", b: ["Ice"] },
     ]
   },
-  "Flaming Gorge": {
+  "Flaming Gorge Reservoir": {
     cur: { status: "Good", flow: "800 CFS", temp: "40°F" },
     active: [
       { name: "Midges", size: "#20-24", time: "Midday", note: "Below dam on Green River." },
@@ -138,61 +135,23 @@ const IMG = {
   "Provo River (Middle)": "https://images.unsplash.com/photo-1468956398224-6d6f66e22c35?w=800&h=400&fit=crop",
   "Strawberry Reservoir": "https://images.unsplash.com/photo-1505765050516-f72dcac9c60e?w=800&h=400&fit=crop",
   "Jordanelle Reservoir": "https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=800&h=400&fit=crop",
-  "Flaming Gorge": "https://images.unsplash.com/photo-1500534314263-0869cdddb5b4?w=800&h=400&fit=crop",
+  "Flaming Gorge Reservoir": "https://images.unsplash.com/photo-1500534314263-0869cdddb5b4?w=800&h=400&fit=crop",
   "Fish Lake": "https://images.unsplash.com/photo-1508193638397-1c4234db14d8?w=800&h=400&fit=crop",
 };
 
-const SPOTS0 = [
-  { id:"s1",name:"Strawberry Reservoir",reg:"Wasatch",species:["Rainbow Trout","Cutthroat Trout","Kokanee Salmon"],rating:4.5,ratings:[5,4,5,4],catches:42,by:"TrailMaster",desc:"Premier stillwater fishery. Best early summer and fall." },
-  { id:"s2",name:"Provo River (Middle)",reg:"Wasatch",species:["Brown Trout","Rainbow Trout","Mountain Whitefish"],rating:4.8,ratings:[5,5,5,4,5],catches:67,by:"FlyRodKing",desc:"Blue-ribbon stream. 2,500-3,500 fish per mile. Walk-and-wade paradise." },
-  { id:"s3",name:"Jordanelle Reservoir",reg:"Wasatch",species:["Smallmouth Bass","Rainbow Trout","Perch"],rating:3.9,ratings:[4,4,3,4],catches:28,by:"BassBandit",desc:"Great bass in summer. Rocky points and structure." },
-  { id:"s4",name:"Flaming Gorge",reg:"Uinta Basin",species:["Lake Trout","Smallmouth Bass","Kokanee Salmon","Rainbow Trout"],rating:4.7,ratings:[5,5,4,5,5],catches:89,by:"DeepDropper",desc:"Trophy lake trout. Green River below dam is world-class." },
-  { id:"s5",name:"Fish Lake",reg:"Central Utah",species:["Lake Trout","Splake","Rainbow Trout","Tiger Trout"],rating:4.2,ratings:[4,4,5,4],catches:35,by:"TrophyHunter",desc:"Excellent splake and tiger trout. Trolling spoons along drop-offs." },
-];
-
-const CATCHES0 = [
-  { id:"c1",user:"FlyRodKing",sid:"s2",species:"Brown Trout",qty:8,date:"2026-03-30",notes:"BWO hatch 1pm. Size 22 parachute.",meth:"Dry Fly" },
-  { id:"c2",user:"FlyRodKing",sid:"s2",species:"Rainbow Trout",qty:4,date:"2026-03-28",notes:"Sow bugs bounce rig.",meth:"Nymph" },
-  { id:"c3",user:"DeepDropper",sid:"s4",species:"Lake Trout",qty:3,date:"2026-03-27",notes:"Tube jigs 95ft. Biggest 28in.",meth:"Jigging" },
-  { id:"c4",user:"TrailMaster",sid:"s1",species:"Cutthroat Trout",qty:6,date:"2026-03-26",notes:"PowerBait at Soldier Creek.",meth:"Bait" },
-  { id:"c5",user:"BassBandit",sid:"s3",species:"Smallmouth Bass",qty:5,date:"2026-03-25",notes:"Drop shot rocky points.",meth:"Lure" },
-  { id:"c6",user:"TrophyHunter",sid:"s5",species:"Splake",qty:4,date:"2026-03-24",notes:"Silver spoons 30ft.",meth:"Trolling" },
-  { id:"c7",user:"DeepDropper",sid:"s4",species:"Rainbow Trout",qty:12,date:"2026-03-22",notes:"Green River scuds on 5x.",meth:"Nymph" },
-  { id:"c8",user:"FlyRodKing",sid:"s2",species:"Brown Trout",qty:6,date:"2026-03-20",notes:"Olive bugger evening pools.",meth:"Streamer" },
-  { id:"c9",user:"TrailMaster",sid:"s1",species:"Rainbow Trout",qty:8,date:"2026-03-18",notes:"Chironomids near inlet.",meth:"Fly" },
-  { id:"c10",user:"BassBandit",sid:"s2",species:"Rainbow Trout",qty:3,date:"2026-03-15",notes:"Egg patterns.",meth:"Nymph" },
-  { id:"c11",user:"DeepDropper",sid:"s4",species:"Lake Trout",qty:5,date:"2026-03-12",notes:"Airplane jigs 110ft.",meth:"Jigging" },
-  { id:"c12",user:"TrophyHunter",sid:"s5",species:"Tiger Trout",qty:2,date:"2026-03-10",notes:"Gold Kastmaster.",meth:"Trolling" },
-  { id:"c13",user:"FlyRodKing",sid:"s2",species:"Mountain Whitefish",qty:10,date:"2026-03-08",notes:"Sow bugs through riffles.",meth:"Nymph" },
-];
-
 const SP_OPT=["Rainbow Trout","Brown Trout","Cutthroat Trout","Brook Trout","Lake Trout","Tiger Trout","Splake","Kokanee Salmon","Smallmouth Bass","Largemouth Bass","Walleye","Yellow Perch","Channel Catfish","Bluegill","Wiper","Mountain Whitefish","Other"];
 const ME_OPT=["Dry Fly","Nymph","Streamer","Bait","Lure","Jigging","Trolling","Fly","Spin","Ice Fishing","Other"];
-const REGS=["All Regions","Wasatch","Uinta Basin","Central Utah","Southern Utah","Northern Utah"];
+const REGS=["All Regions","Wasatch","Northern Utah","Uinta Basin","Uintas","Central Utah","Southern Utah"];
 
-// Stone Creek palette — outdoorsy blue with natural tones
+// Stone Creek palette
 const $={
-  bg:"#0c1a2b",       // deep night water
-  bg2:"#0f1f32",      // header
-  cd:"#132639",       // cards
-  cdH:"#1a3350",      // card hover
-  inp:"#0e1926",      // inputs
-  a:"#4a9fd4",        // river blue (primary)
-  aD:"#2a6f9e",       // deep blue
-  aL:"#6db8e8",       // light blue
-  w:"#d4915a",        // warm campfire orange
-  wD:"#8b5e3c",       // leather brown
-  g:"#5ab07a",        // pine green
-  gD:"#2d6e4a",       // deep forest
-  r:"#cf5c5c",        // muted red
-  pro:"#8b7ec8",      // muted purple
-  proD:"#5f4f99",
-  stone:"#8a9bae",    // stone gray accent
-  tx:"#dde4eb",       // text
-  dm:"#7b8fa6",       // dim text
-  mt:"#4a5f75",       // muted text
-  bd:"#1e3348",       // borders
-  sf:"#162c42",       // surface
+  bg:"#0c1a2b",bg2:"#0f1f32",cd:"#132639",cdH:"#1a3350",inp:"#0e1926",
+  a:"#4a9fd4",aD:"#2a6f9e",aL:"#6db8e8",
+  w:"#d4915a",wD:"#8b5e3c",
+  g:"#5ab07a",gD:"#2d6e4a",
+  r:"#cf5c5c",
+  pro:"#8b7ec8",proD:"#5f4f99",
+  stone:"#8a9bae",tx:"#dde4eb",dm:"#7b8fa6",mt:"#4a5f75",bd:"#1e3348",sf:"#162c42",
 };
 const MO=new Date().getMonth();
 const F="'Barlow',sans-serif",FD="'Bitter',serif";
@@ -202,8 +161,8 @@ const ipt={width:"100%",background:$.inp,border:`1px solid ${$.bd}`,color:$.tx,p
 function App(){
   const[user,setUser]=useState(null);
   const[view,setView]=useState("spots");
-  const[spots,setSpots]=useState(SPOTS0);
-  const[catches,setCatches]=useState(CATCHES0);
+  const[spots,setSpots]=useState([]);
+  const[catches,setCatches]=useState([]);
   const[loading,setLoading]=useState(true);
   const[sel,setSel]=useState(null);
   const[modal,setModal]=useState(null);
@@ -212,25 +171,95 @@ function App(){
   const[isPro,setIsPro]=useState(false);
   const[auth,setAuth]=useState({username:"",email:"",password:""});
   const[signUp,setSignUp]=useState(false);
+  const[err,setErr]=useState("");
 
+  // ===== LOAD DATA FROM SUPABASE =====
   useEffect(()=>{(async()=>{
-    try{const r=await storage.get(SK.USER);if(r?.value)setUser(JSON.parse(r.value));}catch{}
-    try{const r=await storage.get(SK.SPOTS);if(r?.value){const d=JSON.parse(r.value);if(d.length)setSpots(d);}}catch{}
-    try{const r=await storage.get(SK.CATCHES);if(r?.value){const d=JSON.parse(r.value);if(d.length)setCatches(d);}}catch{}
-    try{const r=await storage.get(SK.PRO);if(r?.value)setIsPro(JSON.parse(r.value));}catch{}
+    try {
+      // Check if already logged in
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+        if (profile) setUser({ ...profile, email: session.user.email });
+      }
+
+      // Load spots
+      const { data: spotData } = await supabase.from('spots').select('*').order('avg_rating', { ascending: false });
+      if (spotData?.length) {
+        setSpots(spotData.map(s => ({
+          id: s.id, name: s.name, reg: s.region, species: s.species || [],
+          rating: parseFloat(s.avg_rating) || 0, ratings: [], catches: s.total_catches || 0,
+          by: s.is_official ? 'UDWR' : 'Community', desc: s.description || '',
+        })));
+      }
+
+      // Load catches
+      const { data: catchData } = await supabase.from('catches').select('*, profiles(username)').order('caught_at', { ascending: false }).limit(200);
+      if (catchData?.length) {
+        setCatches(catchData.map(c => ({
+          id: c.id, user: c.profiles?.username || 'Angler', sid: c.spot_id,
+          species: c.species, qty: c.quantity, date: c.caught_at,
+          notes: c.notes || '', meth: c.method || '',
+        })));
+      }
+    } catch(e) { console.error('Load error:', e); }
     setLoading(false);
   })();},[]);
 
-  const sv=async(k,d,fn)=>{fn(d);try{await storage.set(k,JSON.stringify(d));}catch{}};
-  const login=async()=>{if(!auth.username.trim())return;const u={username:auth.username.trim(),email:auth.email,joined:new Date().toISOString()};setUser(u);try{await storage.set(SK.USER,JSON.stringify(u));}catch{}};
-  const goPro=async()=>{setIsPro(true);try{await storage.set(SK.PRO,JSON.stringify(true));}catch{}};
+  // ===== SIGN UP / SIGN IN =====
+  const login = async () => {
+    setErr("");
+    if (signUp) {
+      // SIGN UP — need username + email + password
+      if (!auth.username.trim()) return setErr("Pick a username!");
+      if (!auth.email.trim()) return setErr("Enter your email!");
+      if (auth.password.length < 6) return setErr("Password must be 6+ characters");
+      const { data, error } = await supabase.auth.signUp({
+        email: auth.email, password: auth.password,
+        options: { data: { username: auth.username.trim() } }
+      });
+      if (error) return setErr(error.message);
+      if (data.user) {
+        // Wait a moment for the profile trigger to fire
+        await new Promise(r => setTimeout(r, 500));
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
+        setUser(profile ? { ...profile, email: data.user.email } : { username: auth.username.trim(), id: data.user.id, email: data.user.email });
+      }
+    } else {
+      // SIGN IN — need email + password
+      if (!auth.email.trim()) return setErr("Enter your email!");
+      if (!auth.password) return setErr("Enter your password!");
+      const { data, error } = await supabase.auth.signInWithPassword({ email: auth.email, password: auth.password });
+      if (error) return setErr(error.message);
+      if (data.user) {
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
+        setUser(profile ? { ...profile, email: data.user.email } : { username: data.user.email.split('@')[0], id: data.user.id, email: data.user.email });
+      }
+    }
+  };
 
-  if(loading)return <div style={{background:$.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F}}><link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Bitter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/><div style={{color:$.a,fontSize:15}}>Loading Stone Creek...</div></div>;
+  // ===== SIGN OUT =====
+  const logout = async () => { await supabase.auth.signOut(); setUser(null); };
+
+  const goPro=async()=>{setIsPro(true);};
+
+  // Helper to reload spots
+  const reloadSpots = async () => {
+    const { data } = await supabase.from('spots').select('*').order('avg_rating', { ascending: false });
+    if (data) setSpots(data.map(s => ({ id: s.id, name: s.name, reg: s.region, species: s.species || [], rating: parseFloat(s.avg_rating) || 0, ratings: [], catches: s.total_catches || 0, by: s.is_official ? 'UDWR' : 'Community', desc: s.description || '' })));
+  };
+
+  // Helper to reload catches
+  const reloadCatches = async () => {
+    const { data } = await supabase.from('catches').select('*, profiles(username)').order('caught_at', { ascending: false }).limit(200);
+    if (data) setCatches(data.map(c => ({ id: c.id, user: c.profiles?.username || 'Angler', sid: c.spot_id, species: c.species, qty: c.quantity, date: c.caught_at, notes: c.notes || '', meth: c.method || '' })));
+  };
+
+  if(loading)return <div style={{background:$.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F}}><div style={{color:$.a,fontSize:15}}>Loading Stone Creek...</div></div>;
 
   // AUTH SCREEN
   if(!user)return(
     <div style={{background:$.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F,position:"relative",overflow:"hidden"}}>
-      <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Bitter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
       <div style={{position:"absolute",top:-120,right:-80,width:400,height:400,borderRadius:"50%",background:`radial-gradient(circle,${$.aD}12,transparent 70%)`}}/>
       <div style={{position:"absolute",bottom:-100,left:-60,width:350,height:350,borderRadius:"50%",background:`radial-gradient(circle,${$.gD}15,transparent 70%)`}}/>
       <div style={{width:"100%",maxWidth:400,padding:20,zIndex:1}}>
@@ -242,14 +271,21 @@ function App(){
         </div>
         <div style={{background:$.cd,borderRadius:14,padding:28,border:`1px solid ${$.bd}`}}>
           <h2 style={{fontFamily:FD,fontSize:18,margin:"0 0 20px",color:$.tx}}>{signUp?"Join the Creek":"Welcome Back"}</h2>
-          {[{l:"USERNAME",k:"username",ph:"angler_name"},...(signUp?[{l:"EMAIL",k:"email",ph:"you@email.com",ty:"email"}]:[]),{l:"PASSWORD",k:"password",ph:"••••••••",ty:"password"}].map(f=>(
-            <div key={f.k} style={{marginBottom:14}}>
-              <label style={{...lbl,marginTop:0}}>{f.l}</label>
-              <input value={auth[f.k]} onChange={e=>setAuth({...auth,[f.k]:e.target.value})} placeholder={f.ph} type={f.ty||"text"} onKeyDown={e=>e.key==="Enter"&&login()} style={ipt}/>
-            </div>
-          ))}
+          {signUp && <div style={{marginBottom:14}}>
+            <label style={{...lbl,marginTop:0}}>USERNAME</label>
+            <input value={auth.username} onChange={e=>setAuth({...auth,username:e.target.value})} placeholder="angler_name" style={ipt}/>
+          </div>}
+          <div style={{marginBottom:14}}>
+            <label style={{...lbl,marginTop:0}}>EMAIL</label>
+            <input value={auth.email} onChange={e=>setAuth({...auth,email:e.target.value})} placeholder="you@email.com" type="email" style={ipt}/>
+          </div>
+          <div style={{marginBottom:14}}>
+            <label style={{...lbl,marginTop:0}}>PASSWORD</label>
+            <input value={auth.password} onChange={e=>setAuth({...auth,password:e.target.value})} placeholder="••••••••" type="password" onKeyDown={e=>e.key==="Enter"&&login()} style={ipt}/>
+          </div>
+          {err && <div style={{color:$.r,fontSize:11,marginBottom:10,padding:"6px 10px",background:$.r+"12",borderRadius:6}}>{err}</div>}
           <button onClick={login} style={{width:"100%",background:`linear-gradient(135deg,${$.a},${$.aD})`,border:"none",color:"#fff",padding:"13px",borderRadius:10,cursor:"pointer",fontFamily:F,fontSize:15,fontWeight:600,marginTop:4}}>{signUp?"Create Account":"Sign In"}</button>
-          <div style={{textAlign:"center",marginTop:16,fontSize:13,color:$.dm}}>{signUp?"Have an account?":"New here?"}{" "}<span onClick={()=>setSignUp(!signUp)} style={{color:$.a,cursor:"pointer",fontWeight:500}}>{signUp?"Sign In":"Join Free"}</span></div>
+          <div style={{textAlign:"center",marginTop:16,fontSize:13,color:$.dm}}>{signUp?"Have an account?":"New here?"}{" "}<span onClick={()=>{setSignUp(!signUp);setErr("");}} style={{color:$.a,cursor:"pointer",fontWeight:500}}>{signUp?"Sign In":"Join Free"}</span></div>
         </div>
         <p style={{textAlign:"center",marginTop:20,fontSize:10,color:$.mt}}>Free forever · Community-powered fishing intel</p>
       </div>
@@ -260,7 +296,6 @@ function App(){
 
   return(
     <div style={{background:$.bg,minHeight:"100vh",fontFamily:F,color:$.tx}}>
-      <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Bitter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
       {/* HEADER */}
       <header style={{background:$.bg2,borderBottom:`1px solid ${$.bd}`,padding:"0 20px",position:"sticky",top:0,zIndex:100}}>
         <div style={{maxWidth:1100,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",height:56}}>
@@ -280,29 +315,32 @@ function App(){
             ))}
           </nav>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <button onClick={()=>setModal("hatch")} style={{background:`linear-gradient(135deg,${$.g},${$.gD})`,border:"none",color:"#fff",padding:"4px 10px",borderRadius:7,cursor:"pointer",fontFamily:F,fontSize:10,fontWeight:600}}>🪰 Report Hatch</button>
             {isPro&&<span style={{background:$.proD+"35",color:$.pro,padding:"3px 8px",borderRadius:8,fontSize:9,fontWeight:600,border:`1px solid ${$.proD}50`,letterSpacing:1}}>PRO</span>}
             {!isPro&&<button onClick={()=>setModal("pro")} style={{background:`linear-gradient(135deg,${$.pro},${$.proD})`,border:"none",color:"#fff",padding:"4px 10px",borderRadius:7,cursor:"pointer",fontFamily:F,fontSize:10,fontWeight:600}}>Go Pro</button>}
-            <span style={{background:$.sf,padding:"4px 10px",borderRadius:12,fontSize:11,color:$.dm}}>👤 {user.username}</span>
+            <span onClick={logout} title="Click to sign out" style={{background:$.sf,padding:"4px 10px",borderRadius:12,fontSize:11,color:$.dm,cursor:"pointer"}}>👤 {user.username}</span>
           </div>
         </div>
       </header>
 
       <main style={{maxWidth:1100,margin:"0 auto",padding:"20px 20px 80px"}}>
         {view==="spots"&&!sel&&<SpotsList spots={fSpots} filter={filter} setFilter={setFilter} sort={sort} setSort={setSort} onSel={setSel} onAdd={()=>setModal("add")} catches={catches}/>}
-        {view==="spots"&&sel&&<Detail spot={sel} onBack={()=>setSel(null)} catches={catches} user={user} spots={spots} saveSpots={d=>sv(SK.SPOTS,d,setSpots)} onLog={()=>setModal("catch")} isPro={isPro} onPro={()=>setModal("pro")}/>}
+        {view==="spots"&&sel&&<Detail spot={sel} onBack={()=>setSel(null)} catches={catches} user={user} spots={spots} onLog={()=>setModal("catch")} isPro={isPro} onPro={()=>setModal("pro")}/>}
         {view==="log"&&<MyCatches uc={catches.filter(x=>x.user===user.username)} spots={spots} onLog={()=>setModal("catch")} isPro={isPro} onPro={()=>setModal("pro")}/>}
         {view==="board"&&<Board catches={catches} spots={spots}/>}
         {view==="deals"&&<Deals isPro={isPro} onPro={()=>setModal("pro")}/>}
         {view==="feed"&&<Feed catches={catches} spots={spots}/>}
       </main>
 
-      {modal==="add"&&<AddModal close={()=>setModal(null)} user={user} spots={spots} save={d=>sv(SK.SPOTS,d,setSpots)}/>}
-      {modal==="catch"&&<CatchModal close={()=>setModal(null)} user={user} spots={spots} catches={catches} save={d=>sv(SK.CATCHES,d,setCatches)} sel={sel}/>}
+      {modal==="add"&&<AddModal close={()=>setModal(null)} user={user} spots={spots} reload={reloadSpots} done={()=>setModal(null)}/>}
+      {modal==="catch"&&<CatchModal close={()=>setModal(null)} user={user} spots={spots} reload={reloadCatches} sel={sel} done={()=>setModal(null)}/>}
+      {modal==="hatch"&&<HatchModal close={()=>setModal(null)} user={user} spots={spots}/>}
       {modal==="pro"&&<ProModal close={()=>setModal(null)} go={goPro}/>}
     </div>
   );
 }
 
+// ===== PRO MODAL (unchanged) =====
 function ProModal({close,go}){
   return <Overlay close={close}><div style={{textAlign:"center",marginBottom:24}}>
     <div style={{fontSize:44,marginBottom:6}}>⚡</div>
@@ -326,12 +364,13 @@ function Overlay({close,children}){
   </div>;
 }
 
+// ===== SPOTS LIST (unchanged) =====
 function SpotsList({spots,filter,setFilter,sort,setSort,onSel,onAdd,catches}){
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
       <div>
         <h2 style={{fontFamily:FD,fontSize:24,fontWeight:700,margin:0}}>Fishing Spots</h2>
-        <p style={{color:$.dm,marginTop:2,fontSize:12}}>Tap any spot for intel, guides & gear</p>
+        <p style={{color:$.dm,marginTop:2,fontSize:12}}>Tap any spot for intel, guides & gear · {spots.length} spots loaded</p>
       </div>
       <button onClick={onAdd} style={{background:`linear-gradient(135deg,${$.g},${$.gD})`,border:"none",color:"#fff",padding:"9px 16px",borderRadius:9,cursor:"pointer",fontFamily:F,fontSize:12,fontWeight:600}}>+ Add Spot</button>
     </div>
@@ -344,7 +383,7 @@ function SpotsList({spots,filter,setFilter,sort,setSort,onSel,onAdd,catches}){
       <span style={{fontSize:8,color:$.mt,textTransform:"uppercase",letterSpacing:1}}>Sponsored</span>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(310px,1fr))",gap:12}}>
-      {spots.map(sp=>{const img=IMG[sp.name];const hd=HATCH[sp.name];const sc=catches.filter(x=>x.sid===sp.id);const guides=GUIDES[sp.id];
+      {spots.map(sp=>{const img=IMG[sp.name];const hd=HATCH[sp.name];const sc=catches.filter(x=>x.sid===sp.id);const guides=GUIDES[sp.name];
         return <div key={sp.id} onClick={()=>onSel(sp)} style={{background:$.cd,borderRadius:12,border:`1px solid ${$.bd}`,cursor:"pointer",overflow:"hidden",transition:"all .2s"}}
           onMouseEnter={e=>{e.currentTarget.style.borderColor=$.aD;e.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={e=>{e.currentTarget.style.borderColor=$.bd;e.currentTarget.style.transform="none";}}>
           {img&&<div style={{height:120,background:`url(${img}) center/cover`,position:"relative"}}>
@@ -375,19 +414,36 @@ function SpotsList({spots,filter,setFilter,sort,setSort,onSel,onAdd,catches}){
   </div>;
 }
 
-function Detail({spot,onBack,catches,user,spots,saveSpots,onLog,isPro,onPro}){
+// ===== DETAIL VIEW =====
+function Detail({spot,onBack,catches,user,spots,onLog,isPro,onPro}){
   const[tab,setTab]=useState("intel");const[rat,setRat]=useState(0);const[hov,setHov]=useState(0);const[cmt,setCmt]=useState("");
-  const[revs,setRevs]=useState([
-    {user:"FlyRodKing",r:5,c:"Stellar. 12 browns on dries.",d:"2026-03-28"},
-    {user:"TrailMaster",r:5,c:"Best spot in Utah. Never disappoints.",d:"2026-03-20"},
-    {user:"BassBandit",r:4,c:"Good numbers, nothing huge. Try south bend.",d:"2026-03-15"},
-  ]);
+  const[revs,setRevs]=useState([]);
+  const[hatchReports,setHatchReports]=useState([]);
+
+  // Load reviews and hatch reports from Supabase
+  useEffect(()=>{(async()=>{
+    const { data: revData } = await supabase.from('reviews').select('*, profiles(username)').eq('spot_id', spot.id).order('created_at', { ascending: false });
+    if (revData) setRevs(revData.map(r => ({ user: r.profiles?.username || 'Angler', r: r.rating, c: r.comment || '', d: r.created_at?.split('T')[0] })));
+    const { data: hData } = await supabase.from('hatch_reports').select('*, profiles(username)').eq('spot_id', spot.id).order('observed_at', { ascending: false }).limit(20);
+    if (hData) setHatchReports(hData);
+  })();},[spot.id]);
+
   const hd=HATCH[spot.name];const img=IMG[spot.name];const sc=catches.filter(x=>x.sid===spot.id);
-  const guides=GUIDES[spot.id]||[];const gear=GEAR[spot.id]||[];
+  const guides=GUIDES[spot.name]||[];const gear=GEAR[spot.name]||[];
   const lb={};sc.forEach(x=>{if(!lb[x.user])lb[x.user]={t:0,sp:new Set(),me:new Set()};lb[x.user].t+=x.qty;lb[x.user].sp.add(x.species);lb[x.user].me.add(x.meth);});
   const leaders=Object.entries(lb).map(([u,d])=>({user:u,total:d.t,species:d.sp.size,methods:[...d.me].join(", ")})).sort((a,b)=>b.total-a.total);
   const spC={};sc.forEach(x=>{spC[x.species]=(spC[x.species]||0)+x.qty;});const spR=Object.entries(spC).sort((a,b)=>b[1]-a[1]);const mx=spR[0]?.[1]||1;
   const meC={};sc.forEach(x=>{meC[x.meth]=(meC[x.meth]||0)+x.qty;});const meR=Object.entries(meC).sort((a,b)=>b[1]-a[1]);
+
+  const submitReview = async () => {
+    if (!rat) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return alert('Sign in first!');
+    const { error } = await supabase.from('reviews').upsert({ user_id: session.user.id, spot_id: spot.id, rating: rat, comment: cmt.trim() || null }, { onConflict: 'user_id,spot_id' });
+    if (error) return alert(error.message);
+    setRevs([{ user: user.username, r: rat, c: cmt.trim(), d: new Date().toISOString().split('T')[0] }, ...revs.filter(r => r.user !== user.username)]);
+    setRat(0); setCmt("");
+  };
 
   const tabs=[{k:"intel",l:"🪰 Intel"},{k:"guides",l:"🎣 Guides"},{k:"gear",l:"🛒 Gear"},{k:"board",l:"🏆 Board"},{k:"catch",l:"🐟 Caught"},{k:"rev",l:"⭐ Reviews"}];
 
@@ -445,8 +501,26 @@ function Detail({spot,onBack,catches,user,spots,saveSpots,onLog,isPro,onPro}){
           <button onClick={onPro} style={proBtn}>Upgrade</button>
         </div>}
       </Card>
+      {hatchReports.length > 0 && <Card style={{gridColumn:"1/-1"}}><h3 style={h3}>📋 Community Hatch Reports</h3>
+        {hatchReports.map((hr,i) => <div key={i} style={{padding:"6px 0",borderBottom:i<hatchReports.length-1?`1px solid ${$.bd}`:"none"}}>
+          <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontWeight:600,fontSize:12}}>{hr.bug_name} {hr.bug_size||''}</span><span style={{color:$.dm,fontSize:10}}>{hr.observed_at}</span></div>
+          <div style={{color:$.dm,fontSize:10}}>{hr.intensity && <span style={{color:$.g,fontWeight:500}}>{hr.intensity}</span>} {hr.time_of_day && `· ${hr.time_of_day}`} {hr.water_temp_f && `· ${hr.water_temp_f}°F`}</div>
+          {hr.notes && <div style={{color:$.mt,fontSize:10,fontStyle:"italic"}}>{hr.notes}</div>}
+          <div style={{color:$.mt,fontSize:9}}>— {hr.profiles?.username || 'Angler'}</div>
+        </div>)}
+      </Card>}
     </div>}
-    {tab==="intel"&&!hd&&<Card style={{textAlign:"center",padding:32}}><span style={{fontSize:32}}>🪰</span><p style={{color:$.dm,marginTop:8}}>No hatch data yet.</p></Card>}
+    {tab==="intel"&&!hd&&<div>
+      <Card style={{textAlign:"center",padding:32}}><span style={{fontSize:32}}>🪰</span><p style={{color:$.dm,marginTop:8}}>No editorial hatch data yet for this spot.</p></Card>
+      {hatchReports.length > 0 && <Card style={{marginTop:14}}><h3 style={h3}>📋 Community Hatch Reports</h3>
+        {hatchReports.map((hr,i) => <div key={i} style={{padding:"6px 0",borderBottom:i<hatchReports.length-1?`1px solid ${$.bd}`:"none"}}>
+          <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontWeight:600,fontSize:12}}>{hr.bug_name} {hr.bug_size||''}</span><span style={{color:$.dm,fontSize:10}}>{hr.observed_at}</span></div>
+          <div style={{color:$.dm,fontSize:10}}>{hr.intensity && <span style={{color:$.g,fontWeight:500}}>{hr.intensity}</span>} {hr.time_of_day && `· ${hr.time_of_day}`}</div>
+          {hr.notes && <div style={{color:$.mt,fontSize:10,fontStyle:"italic"}}>{hr.notes}</div>}
+          <div style={{color:$.mt,fontSize:9}}>— {hr.profiles?.username || 'Angler'}</div>
+        </div>)}
+      </Card>}
+    </div>}
 
     {tab==="guides"&&<div>{guides.length===0?<Card style={{textAlign:"center",padding:32}}><span style={{fontSize:32}}>🎣</span><p style={{color:$.dm,marginTop:8}}>No guides listed yet.</p></Card>:
       <div style={{display:"flex",flexDirection:"column",gap:12}}>
@@ -478,15 +552,16 @@ function Detail({spot,onBack,catches,user,spots,saveSpots,onLog,isPro,onPro}){
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:15,fontWeight:700,color:$.g}}>{g.price}</span><button style={{background:$.a,border:"none",color:"#fff",padding:"5px 12px",borderRadius:6,cursor:"pointer",fontFamily:F,fontSize:10,fontWeight:600}}>Shop →</button></div>
         </Card>)}
       </div>
-      <div style={{marginTop:10,fontSize:9,color:$.mt,textAlign:"center"}}>Affiliate links support Stone Creek at no extra cost</div>
-      {!isPro&&<div style={{marginTop:12,background:$.proD+"12",borderRadius:8,padding:"9px 12px",border:`1px solid ${$.proD}25`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      {gear.length > 0 && <div style={{marginTop:10,fontSize:9,color:$.mt,textAlign:"center"}}>Affiliate links support Stone Creek at no extra cost</div>}
+      {gear.length === 0 && <Card style={{textAlign:"center",padding:32}}><span style={{fontSize:32}}>🛒</span><p style={{color:$.dm,marginTop:8}}>No gear picks for this spot yet.</p></Card>}
+      {!isPro&&gear.length>0&&<div style={{marginTop:12,background:$.proD+"12",borderRadius:8,padding:"9px 12px",border:`1px solid ${$.proD}25`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <span style={{fontSize:10,color:$.dm}}>⚡ <span style={{color:$.pro,fontWeight:600}}>Pro</span> members get exclusive gear discounts</span>
         <button onClick={onPro} style={proBtn}>Upgrade</button>
       </div>}
     </div>}
 
     {tab==="board"&&<Card><h3 style={h3}>🏆 Top Anglers — {spot.name}</h3>
-      {leaders.length===0?<p style={{color:$.dm,textAlign:"center"}}>No catches yet.</p>:
+      {leaders.length===0?<p style={{color:$.dm,textAlign:"center"}}>No catches yet. Be the first!</p>:
         leaders.map((l,i)=><div key={l.user} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:i<leaders.length-1?`1px solid ${$.bd}`:"none"}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:i<3?18:12,width:26,textAlign:"center",fontWeight:700,color:$.dm}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}</span>
           <div><div style={{fontWeight:600,fontSize:13}}>{l.user}</div><div style={{color:$.dm,fontSize:9}}>{l.species} species · {l.methods}</div></div></div>
@@ -505,7 +580,7 @@ function Detail({spot,onBack,catches,user,spots,saveSpots,onLog,isPro,onPro}){
       </div>)}
       <div style={{marginTop:12,paddingTop:10,borderTop:`1px solid ${$.bd}`}}>
         <div style={{fontSize:10,fontWeight:600,color:$.dm,marginBottom:6}}>Recent Reports</div>
-        {sc.slice(-5).reverse().map((x,i)=><div key={i} style={{fontSize:10,color:$.dm,padding:"4px 0"}}><span style={{fontWeight:500}}>{x.user}</span> · {x.qty} {x.species} · {x.meth} <span style={{color:$.mt}}>· {x.date}</span>{x.notes&&<div style={{color:$.mt,fontSize:9,fontStyle:"italic"}}>{x.notes}</div>}</div>)}
+        {sc.slice(0,5).map((x,i)=><div key={i} style={{fontSize:10,color:$.dm,padding:"4px 0"}}><span style={{fontWeight:500}}>{x.user}</span> · {x.qty} {x.species} · {x.meth} <span style={{color:$.mt}}>· {x.date}</span>{x.notes&&<div style={{color:$.mt,fontSize:9,fontStyle:"italic"}}>{x.notes}</div>}</div>)}
       </div></Card>
     </div>}
 
@@ -513,10 +588,10 @@ function Detail({spot,onBack,catches,user,spots,saveSpots,onLog,isPro,onPro}){
       <Card><h3 style={h3}>Rate This Spot</h3>
         <div style={{display:"flex",gap:4,marginBottom:10}}>{[1,2,3,4,5].map(s=><span key={s} onClick={()=>setRat(s)} onMouseEnter={()=>setHov(s)} onMouseLeave={()=>setHov(0)} style={{fontSize:22,cursor:"pointer",color:s<=(hov||rat)?$.w:$.mt}}>★</span>)}</div>
         <textarea value={cmt} onChange={e=>setCmt(e.target.value)} placeholder="Tips, conditions..." rows={3} style={{...ipt,resize:"vertical"}}/>
-        <button onClick={()=>{if(!rat)return;setRevs([{user:user.username,r:rat,c:cmt.trim(),d:new Date().toISOString().split("T")[0]},...revs]);const up=spots.map(s=>{if(s.id===spot.id){const nr=[...s.ratings,rat];return{...s,ratings:nr,rating:nr.reduce((a,b)=>a+b)/nr.length};}return s;});saveSpots(up);setRat(0);setCmt("");}} style={{background:$.w,border:"none",color:"#fff",padding:"8px 14px",borderRadius:7,cursor:"pointer",fontFamily:F,fontWeight:600,fontSize:11,marginTop:8}}>Submit</button>
+        <button onClick={submitReview} style={{background:$.w,border:"none",color:"#fff",padding:"8px 14px",borderRadius:7,cursor:"pointer",fontFamily:F,fontWeight:600,fontSize:11,marginTop:8}}>Submit</button>
       </Card>
       <Card style={{maxHeight:300,overflowY:"auto"}}><h3 style={h3}>Reviews ({revs.length})</h3>
-        {revs.map((r,i)=><div key={i} style={{padding:"6px 0",borderBottom:i<revs.length-1?`1px solid ${$.bd}`:"none"}}>
+        {revs.length===0?<p style={{color:$.dm,fontSize:11}}>No reviews yet. Be the first!</p>:revs.map((r,i)=><div key={i} style={{padding:"6px 0",borderBottom:i<revs.length-1?`1px solid ${$.bd}`:"none"}}>
           <div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontWeight:600,fontSize:11}}>👤 {r.user}</span><div>{[1,2,3,4,5].map(s=><span key={s} style={{color:s<=r.r?$.w:$.mt,fontSize:9}}>★</span>)}</div></div>
           {r.c&&<p style={{color:$.dm,fontSize:10,lineHeight:1.4,margin:"2px 0"}}>{r.c}</p>}
           <span style={{color:$.mt,fontSize:8}}>{r.d}</span>
@@ -526,6 +601,7 @@ function Detail({spot,onBack,catches,user,spots,saveSpots,onLog,isPro,onPro}){
   </div>;
 }
 
+// ===== MY CATCHES =====
 function MyCatches({uc,spots,onLog,isPro,onPro}){
   const nm=id=>spots.find(s=>s.id===id)?.name||"Unknown";const tot=uc.reduce((a,x)=>a+x.qty,0);const usp=new Set(uc.map(x=>x.species)).size;
   return <div>
@@ -551,6 +627,7 @@ function MyCatches({uc,spots,onLog,isPro,onPro}){
   </div>;
 }
 
+// ===== BOARD =====
 function Board({catches,spots}){
   const[sf,setSf]=useState("all");const fc=sf==="all"?catches:catches.filter(x=>x.sid===sf);
   const lb={};fc.forEach(x=>{if(!lb[x.user])lb[x.user]={t:0,sp:new Set(),st:new Set()};lb[x.user].t+=x.qty;lb[x.user].sp.add(x.species);lb[x.user].st.add(x.sid);});
@@ -560,13 +637,15 @@ function Board({catches,spots}){
       <h2 style={{fontFamily:FD,fontSize:24,fontWeight:700,margin:0}}>🏆 Leaderboard</h2>
       <select value={sf} onChange={e=>setSf(e.target.value)} style={ddSt}><option value="all">All Spots</option>{spots.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select>
     </div>
-    {leaders.map((l,i)=><div key={l.user} style={{background:i<3?$.cdH:$.cd,borderRadius:10,padding:"12px 18px",border:`1px solid ${i<3?$.aD+"35":$.bd}`,marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+    {leaders.length===0?<Card style={{textAlign:"center",padding:36}}><span style={{fontSize:36}}>🏆</span><p style={{color:$.dm,marginTop:8}}>No catches logged yet. Be the first!</p></Card>:
+    leaders.map((l,i)=><div key={l.user} style={{background:i<3?$.cdH:$.cd,borderRadius:10,padding:"12px 18px",border:`1px solid ${i<3?$.aD+"35":$.bd}`,marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
       <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:i<3?20:12,width:28,textAlign:"center",fontWeight:700,color:$.dm}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":`#${i+1}`}</span><div><div style={{fontWeight:600,fontSize:13}}>{l.user}</div><div style={{color:$.dm,fontSize:9}}>{l.species} species · {l.spots} spots</div></div></div>
       <div style={{textAlign:"right"}}><div style={{fontSize:20,fontWeight:700,color:i===0?$.w:$.a}}>{l.total}</div><div style={{color:$.mt,fontSize:8,textTransform:"uppercase"}}>fish</div></div>
     </div>)}
   </div>;
 }
 
+// ===== DEALS =====
 function Deals({isPro,onPro}){
   const all=[...Object.values(GEAR)].flat();
   return <div>
@@ -587,20 +666,40 @@ function Deals({isPro,onPro}){
   </div>;
 }
 
+// ===== FEED =====
 function Feed({catches,spots}){
   const nm=id=>spots.find(s=>s.id===id)?.name||"Unknown";
   return <div>
     <h2 style={{fontFamily:FD,fontSize:24,fontWeight:700,margin:"0 0 4px"}}>📊 Community Feed</h2>
     <p style={{color:$.dm,marginBottom:14,fontSize:12}}>Latest from all anglers</p>
-    {[...catches].sort((a,b)=>new Date(b.date)-new Date(a.date)).map((x,i)=><div key={i} style={{background:$.cd,borderRadius:10,padding:"10px 14px",border:`1px solid ${$.bd}`,marginBottom:6}}>
+    {catches.length===0?<Card style={{textAlign:"center",padding:36}}><span style={{fontSize:36}}>📊</span><p style={{color:$.dm,marginTop:8}}>No catches yet. Log one to start the feed!</p></Card>:
+    [...catches].sort((a,b)=>new Date(b.date)-new Date(a.date)).map((x,i)=><div key={i} style={{background:$.cd,borderRadius:10,padding:"10px 14px",border:`1px solid ${$.bd}`,marginBottom:6}}>
       <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:28,height:28,borderRadius:"50%",background:$.aD+"25",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0}}>🐟</div>
       <div><div style={{fontSize:11}}><span style={{fontWeight:600}}>{x.user}</span> caught <span style={{color:$.a,fontWeight:600}}>{x.qty} {x.species}</span></div><div style={{color:$.dm,fontSize:9}}>📍 {nm(x.sid)} · {x.meth} · {x.date}</div>{x.notes&&<div style={{color:$.mt,fontSize:9,fontStyle:"italic"}}>{x.notes}</div>}</div></div>
     </div>)}
   </div>;
 }
 
-function AddModal({close,user,spots,save}){
+// ===== ADD SPOT MODAL (saves to Supabase) =====
+function AddModal({close,user,spots,reload,done}){
   const[f,setF]=useState({name:"",reg:"Wasatch",species:[],desc:""});
+  const[saving,setSaving]=useState(false);
+
+  const submit = async () => {
+    if (!f.name.trim() || !f.species.length) return alert("Give your spot a name and at least one species!");
+    setSaving(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    const { error } = await supabase.from('spots').insert({
+      name: f.name.trim(), region: f.reg, species: f.species,
+      description: f.desc.trim() || 'No description yet.',
+      created_by: session?.user?.id || null, is_official: false,
+    });
+    if (error) { setSaving(false); return alert("Error: " + error.message); }
+    await reload();
+    setSaving(false);
+    done();
+  };
+
   return <Overlay close={close}>
     <h2 style={{fontFamily:FD,fontSize:18,margin:"0 0 14px"}}>Add Fishing Spot</h2>
     <label style={lbl}>SPOT NAME *</label><input value={f.name} onChange={e=>setF({...f,name:e.target.value})} placeholder="e.g. Mirror Lake" style={ipt}/>
@@ -609,14 +708,34 @@ function AddModal({close,user,spots,save}){
     <div style={{display:"flex",gap:4,flexWrap:"wrap",margin:"6px 0 8px"}}>{f.species.map(s=><span key={s} style={{background:$.aD+"1a",color:$.a,fontSize:10,padding:"2px 8px",borderRadius:6,display:"flex",alignItems:"center",gap:3,border:`1px solid ${$.aD}20`}}>{s}<span onClick={()=>setF({...f,species:f.species.filter(x=>x!==s)})} style={{cursor:"pointer",color:$.r}}>×</span></span>)}</div>
     <label style={lbl}>DESCRIPTION</label><textarea value={f.desc} onChange={e=>setF({...f,desc:e.target.value})} placeholder="Tips, access..." rows={3} style={{...ipt,resize:"vertical"}}/>
     <div style={{display:"flex",gap:8,marginTop:10}}>
-      <button onClick={()=>{if(!f.name.trim()||!f.species.length)return;save([...spots,{id:"s"+Date.now(),name:f.name.trim(),reg:f.reg,species:f.species,rating:0,ratings:[],catches:0,by:user.username,desc:f.desc.trim()||"No description."}]);close();}} style={{flex:1,background:$.g,border:"none",color:"#fff",padding:"11px",borderRadius:8,cursor:"pointer",fontFamily:F,fontWeight:600,fontSize:12}}>Add Spot</button>
+      <button onClick={submit} disabled={saving} style={{flex:1,background:$.g,border:"none",color:"#fff",padding:"11px",borderRadius:8,cursor:"pointer",fontFamily:F,fontWeight:600,fontSize:12,opacity:saving?0.6:1}}>{saving?"Saving...":"Add Spot"}</button>
       <button onClick={close} style={{background:$.sf,border:`1px solid ${$.bd}`,color:$.dm,padding:"11px 18px",borderRadius:8,cursor:"pointer",fontFamily:F,fontSize:12}}>Cancel</button>
     </div>
   </Overlay>;
 }
 
-function CatchModal({close,user,spots,catches,save,sel}){
-  const[f,setF]=useState({sid:sel?.id||"",species:"",qty:1,date:new Date().toISOString().split("T")[0],meth:"Nymph",notes:""});const spot=spots.find(s=>s.id===f.sid);
+// ===== LOG CATCH MODAL (saves to Supabase) =====
+function CatchModal({close,user,spots,reload,sel,done}){
+  const[f,setF]=useState({sid:sel?.id||"",species:"",qty:1,date:new Date().toISOString().split("T")[0],meth:"Nymph",notes:""});
+  const[saving,setSaving]=useState(false);
+  const spot=spots.find(s=>s.id===f.sid);
+
+  const submit = async () => {
+    if (!f.sid || !f.species) return alert("Pick a spot and species!");
+    setSaving(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setSaving(false); return alert("Sign in first!"); }
+    const { error } = await supabase.from('catches').insert({
+      user_id: session.user.id, spot_id: f.sid, species: f.species,
+      quantity: parseInt(f.qty) || 1, method: f.meth,
+      notes: f.notes.trim() || null, caught_at: f.date,
+    });
+    if (error) { setSaving(false); return alert("Error: " + error.message); }
+    await reload();
+    setSaving(false);
+    done();
+  };
+
   return <Overlay close={close}>
     <h2 style={{fontFamily:FD,fontSize:18,margin:"0 0 14px"}}>🐟 Log a Catch</h2>
     <label style={lbl}>WHERE</label><select value={f.sid} onChange={e=>setF({...f,sid:e.target.value,species:""})} style={ipt}><option value="">Select...</option>{spots.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select>
@@ -630,9 +749,58 @@ function CatchModal({close,user,spots,catches,save,sel}){
     </div>
     <label style={lbl}>NOTES</label><textarea value={f.notes} onChange={e=>setF({...f,notes:e.target.value})} placeholder="Fly/lure, conditions, size..." rows={2} style={{...ipt,resize:"vertical"}}/>
     <div style={{display:"flex",gap:8,marginTop:10}}>
-      <button onClick={()=>{if(!f.sid||!f.species)return;save([...catches,{...f,user:user.username,qty:parseInt(f.qty)||1,id:"c"+Date.now()}]);close();}} style={{flex:1,background:`linear-gradient(135deg,${$.a},${$.aD})`,border:"none",color:"#fff",padding:"11px",borderRadius:8,cursor:"pointer",fontFamily:F,fontWeight:600,fontSize:12}}>Log Catch</button>
+      <button onClick={submit} disabled={saving} style={{flex:1,background:`linear-gradient(135deg,${$.a},${$.aD})`,border:"none",color:"#fff",padding:"11px",borderRadius:8,cursor:"pointer",fontFamily:F,fontWeight:600,fontSize:12,opacity:saving?0.6:1}}>{saving?"Saving...":"Log Catch"}</button>
       <button onClick={close} style={{background:$.sf,border:`1px solid ${$.bd}`,color:$.dm,padding:"11px 18px",borderRadius:8,cursor:"pointer",fontFamily:F,fontSize:12}}>Cancel</button>
     </div>
+  </Overlay>;
+}
+
+// ===== NEW: HATCH REPORT MODAL =====
+function HatchModal({close,user,spots}){
+  const[spotId,setSpotId]=useState("");
+  const[bugName,setBugName]=useState("");
+  const[bugSize,setBugSize]=useState("");
+  const[intensity,setIntensity]=useState("moderate");
+  const[timeOfDay,setTimeOfDay]=useState("");
+  const[notes,setNotes]=useState("");
+  const[waterTemp,setWaterTemp]=useState("");
+  const[saving,setSaving]=useState(false);
+
+  const submit = async () => {
+    if (!spotId || !bugName.trim()) return alert("Pick a spot and name the bug!");
+    setSaving(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setSaving(false); return alert("Sign in first!"); }
+    const { error } = await supabase.from('hatch_reports').insert({
+      user_id: session.user.id, spot_id: spotId,
+      bug_name: bugName.trim(), bug_size: bugSize || null,
+      intensity, time_of_day: timeOfDay || null,
+      notes: notes.trim() || null,
+      water_temp_f: waterTemp ? parseFloat(waterTemp) : null,
+    });
+    if (error) { setSaving(false); return alert("Error: " + error.message); }
+    setSaving(false);
+    close();
+  };
+
+  return <Overlay close={close}>
+    <h2 style={{fontFamily:FD,fontSize:18,margin:"0 0 14px"}}>🪰 Report a Hatch</h2>
+    <p style={{color:$.dm,fontSize:11,marginBottom:10}}>Help other anglers — tell us what's hatching!</p>
+    <label style={lbl}>SPOT *</label>
+    <select value={spotId} onChange={e=>setSpotId(e.target.value)} style={ipt}><option value="">Select spot...</option>{spots.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select>
+    <label style={lbl}>BUG NAME *</label>
+    <input value={bugName} onChange={e=>setBugName(e.target.value)} placeholder="BWO, Caddis, Midges..." style={ipt}/>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+      <div><label style={lbl}>SIZE</label><input value={bugSize} onChange={e=>setBugSize(e.target.value)} placeholder="#20-24" style={ipt}/></div>
+      <div><label style={lbl}>INTENSITY</label><select value={intensity} onChange={e=>setIntensity(e.target.value)} style={ipt}><option value="sparse">Sparse</option><option value="moderate">Moderate</option><option value="heavy">Heavy</option><option value="blizzard">Blizzard</option></select></div>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+      <div><label style={lbl}>TIME OF DAY</label><input value={timeOfDay} onChange={e=>setTimeOfDay(e.target.value)} placeholder="11am-2pm" style={ipt}/></div>
+      <div><label style={lbl}>WATER TEMP (°F)</label><input value={waterTemp} onChange={e=>setWaterTemp(e.target.value)} placeholder="42" type="number" style={ipt}/></div>
+    </div>
+    <label style={lbl}>NOTES</label>
+    <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="What were the fish doing? Rise forms?" rows={3} style={{...ipt,resize:"vertical"}}/>
+    <button onClick={submit} disabled={saving} style={{width:"100%",background:`linear-gradient(135deg,${$.g},${$.gD})`,border:"none",color:"#fff",padding:"13px",borderRadius:10,cursor:"pointer",fontFamily:F,fontSize:15,fontWeight:600,marginTop:14,opacity:saving?0.6:1}}>{saving?"Submitting...":"Submit Hatch Report"}</button>
   </Overlay>;
 }
 
@@ -640,8 +808,6 @@ function Card({children,style={}}){return <div style={{background:$.cd,borderRad
 const h3={fontFamily:FD,fontSize:15,fontWeight:600,margin:"0 0 10px"};
 const ddSt={background:$.sf,border:`1px solid ${$.bd}`,color:$.tx,padding:"7px 12px",borderRadius:8,fontFamily:F,fontSize:12};
 const proBtn={background:$.pro,border:"none",color:"#fff",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontFamily:F,fontSize:10,fontWeight:600};
-
-
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </script>
