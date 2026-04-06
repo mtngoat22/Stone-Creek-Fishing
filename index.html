@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+]<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -501,7 +501,19 @@ function SpotsList({spots,filter,setFilter,sort,setSort,onSel,onAdd,catches}){
 }
 
 // Helper: turn bait/lure/fly name into Amazon search link
-const toBuyLink = (text) => `https://www.amazon.com/s?k=${encodeURIComponent(text + ' fishing')}`;
+const toBuyLink = (text) => {
+  // Clean up and make search more specific
+  let q = text.replace(/[#]/g, 'size ').trim();
+  // Add context words so Amazon finds the right stuff
+  if (/midge|BWO|caddis|PMD|drake|stone|hopper|adams|gnat|emerger|dun|nymph|bugger|egg pattern|sow bug|pheasant tail|hare|copper john|scud|san juan|soft hackle|elk hair/i.test(q)) {
+    q += ' fly fishing flies trout';
+  } else if (/PowerBait|mice tail|worm|mealworm|waxworm/i.test(q)) {
+    q += ' trout bait';
+  } else if (/jig|spoon|spinner|crank|swim|rapala|kastmaster/i.test(q)) {
+    q += ' fishing lure';
+  }
+  return `https://www.amazon.com/s?k=${encodeURIComponent(q)}`;
+};
 
 // ===== DETAIL VIEW =====
 function Detail({spot,onBack,catches,user,spots,onLog,isPro,onPro}){
