@@ -54,53 +54,101 @@ const GUIDES = {
 
 const GEAR = {
   "Provo River (Middle)": [
-    { name: "Umpqua BWO Parachute #20 (3pk)", price: "$5.97", cat: "Flies", hot: true, url: "https://www.amazon.com/s?k=BWO+parachute+fly+%2320+trout" },
+    { name: "BWO Parachute #20 (3pk)", price: "$5.97", cat: "Flies", hot: true, url: "https://www.amazon.com/s?k=BWO+parachute+fly+%2320+trout" },
     { name: "Griffith's Gnat #18 (3pk)", price: "$4.50", cat: "Flies", url: "https://www.amazon.com/s?k=Griffiths+Gnat+fly+%2318" },
     { name: "Sow Bug Assortment 12pk", price: "$14.99", cat: "Flies", url: "https://www.amazon.com/s?k=sow+bug+fly+assortment+trout" },
+    { name: "Pheasant Tail Nymph #18 (6pk)", price: "$7.99", cat: "Flies", url: "https://www.amazon.com/s?k=pheasant+tail+nymph+fly+%2318" },
+    { name: "Zebra Midge #20 (12pk)", price: "$8.99", cat: "Flies", url: "https://www.amazon.com/s?k=zebra+midge+fly+%2320+trout" },
+    { name: "RS2 Emerger #22 (6pk)", price: "$6.99", cat: "Flies", url: "https://www.amazon.com/s?k=RS2+emerger+fly+%2322+trout" },
+    { name: "CDC Comparadun #20 (6pk)", price: "$7.49", cat: "Flies", url: "https://www.amazon.com/s?k=CDC+comparadun+dry+fly+%2320" },
+    { name: "Parachute Adams #18 (6pk)", price: "$6.99", cat: "Flies", hot: true, url: "https://www.amazon.com/s?k=parachute+adams+fly+%2318+trout" },
+    { name: "Elk Hair Caddis #16 (6pk)", price: "$6.49", cat: "Flies", url: "https://www.amazon.com/s?k=elk+hair+caddis+fly+%2316" },
+    { name: "San Juan Worm Red #14 (6pk)", price: "$5.99", cat: "Flies", url: "https://www.amazon.com/s?k=san+juan+worm+red+fly+%2314" },
+    { name: "Egg Pattern Assortment (12pk)", price: "$9.99", cat: "Flies", url: "https://www.amazon.com/s?k=egg+fly+pattern+assortment+trout" },
+    { name: "Woolly Bugger Olive #10 (6pk)", price: "$7.49", cat: "Flies", url: "https://www.amazon.com/s?k=woolly+bugger+olive+fly+%2310" },
+    { name: "PMD Sparkle Dun #16 (6pk)", price: "$7.99", cat: "Flies", url: "https://www.amazon.com/s?k=PMD+sparkle+dun+fly+%2316" },
+    { name: "Green Drake #12 (6pk)", price: "$8.49", cat: "Flies", url: "https://www.amazon.com/s?k=green+drake+dry+fly+%2312" },
+    { name: "Skwala Stonefly #10 (6pk)", price: "$8.99", cat: "Flies", hot: true, url: "https://www.amazon.com/s?k=skwala+stonefly+nymph+fly+%2310" },
+    { name: "Golden Stone Nymph #8 (6pk)", price: "$7.99", cat: "Flies", url: "https://www.amazon.com/s?k=golden+stonefly+nymph+fly+%238" },
+    { name: "Hare's Ear Nymph #16 (6pk)", price: "$6.49", cat: "Flies", url: "https://www.amazon.com/s?k=hares+ear+nymph+fly+%2316" },
+    { name: "Copper John #16 (6pk)", price: "$6.99", cat: "Flies", url: "https://www.amazon.com/s?k=copper+john+fly+%2316+trout" },
+    { name: "Hopper Foam #10 (6pk)", price: "$8.99", cat: "Flies", url: "https://www.amazon.com/s?k=foam+hopper+fly+%2310+trout" },
+    { name: "Soft Hackle Assortment (12pk)", price: "$9.99", cat: "Flies", url: "https://www.amazon.com/s?k=soft+hackle+wet+fly+assortment" },
     { name: "Rio 5.5X Fluorocarbon Tippet", price: "$12.95", cat: "Terminal", url: "https://www.amazon.com/s?k=Rio+fluorocarbon+tippet+5.5X" },
+    { name: "Rio 6X Tippet", price: "$11.95", cat: "Terminal", url: "https://www.amazon.com/s?k=Rio+6X+tippet+fluorocarbon" },
+    { name: "Strike Indicators (12pk)", price: "$6.49", cat: "Terminal", url: "https://www.amazon.com/s?k=fly+fishing+strike+indicator" },
+    { name: "Split Shot Removable (24pk)", price: "$4.99", cat: "Terminal", url: "https://www.amazon.com/s?k=removable+split+shot+fly+fishing" },
     { name: "Redington Classic Trout 9' 5wt", price: "$129.99", cat: "Rods", hot: true, url: "https://www.amazon.com/s?k=Redington+Classic+Trout+5wt+fly+rod" },
     { name: "Orvis Clearwater Reel II", price: "$89.00", cat: "Reels", url: "https://www.amazon.com/s?k=Orvis+Clearwater+fly+reel" },
-    { name: "Pheasant Tail Nymph #18 (6pk)", price: "$7.99", cat: "Flies", url: "https://www.amazon.com/s?k=pheasant+tail+nymph+fly+%2318" },
-    { name: "Strike Indicators (12pk)", price: "$6.49", cat: "Terminal", url: "https://www.amazon.com/s?k=fly+fishing+strike+indicator" },
+    { name: "Fly Box Waterproof Large", price: "$14.99", cat: "Gear", url: "https://www.amazon.com/s?k=waterproof+fly+box+large+fishing" },
   ],
   "Strawberry Reservoir": [
     { name: "Berkley PowerBait Chartreuse", price: "$5.49", cat: "Bait", hot: true, url: "https://www.amazon.com/s?k=Berkley+PowerBait+chartreuse+trout" },
+    { name: "Berkley PowerBait Garlic Scent", price: "$5.99", cat: "Bait", url: "https://www.amazon.com/s?k=Berkley+PowerBait+garlic+trout" },
+    { name: "Berkley PowerBait Rainbow", price: "$5.49", cat: "Bait", url: "https://www.amazon.com/s?k=Berkley+PowerBait+rainbow+trout" },
+    { name: "Mice Tails (15pk)", price: "$5.49", cat: "Bait", url: "https://www.amazon.com/s?k=Berkley+Mice+Tails+trout" },
+    { name: "Berkley PowerBait Eggs", price: "$4.99", cat: "Bait", url: "https://www.amazon.com/s?k=Berkley+PowerBait+eggs+trout" },
     { name: "Jake's Spin-a-Lure 1/4oz", price: "$6.99", cat: "Lures", url: "https://www.amazon.com/s?k=Jakes+Spin+a+Lure+trout" },
     { name: "Rapala Countdown CD07", price: "$9.99", cat: "Lures", url: "https://www.amazon.com/s?k=Rapala+Countdown+CD07" },
-    { name: "Eagle Claw Spinning Combo 6'6\"", price: "$34.99", cat: "Combos", url: "https://www.amazon.com/s?k=Eagle+Claw+spinning+combo+trout" },
-    { name: "Berkley PowerBait Garlic Scent", price: "$5.99", cat: "Bait", url: "https://www.amazon.com/s?k=Berkley+PowerBait+garlic+trout" },
+    { name: "Kastmaster Spoon 1/4oz", price: "$5.99", cat: "Lures", hot: true, url: "https://www.amazon.com/s?k=Kastmaster+spoon+1%2F4oz+trout" },
+    { name: "Thomas Buoyant Spoon 1/4oz", price: "$6.49", cat: "Lures", url: "https://www.amazon.com/s?k=Thomas+Buoyant+spoon+trout" },
     { name: "Pop Gear Trolling Rig", price: "$8.99", cat: "Rigs", hot: true, url: "https://www.amazon.com/s?k=pop+gear+trolling+rig+trout" },
-    { name: "Mice Tails (15pk)", price: "$5.49", cat: "Bait", url: "https://www.amazon.com/s?k=Berkley+Mice+Tails+trout" },
+    { name: "Ford Fender Trolling Rig", price: "$7.99", cat: "Rigs", url: "https://www.amazon.com/s?k=ford+fender+trolling+rig+trout" },
+    { name: "Wedding Ring Spinner (3pk)", price: "$6.99", cat: "Lures", url: "https://www.amazon.com/s?k=wedding+ring+spinner+trolling+trout" },
+    { name: "Treble Hooks #12 (25pk)", price: "$5.49", cat: "Hooks", url: "https://www.amazon.com/s?k=treble+hooks+size+12+trout" },
+    { name: "Eagle Claw Snelled Hooks (24pk)", price: "$4.99", cat: "Hooks", url: "https://www.amazon.com/s?k=Eagle+Claw+snelled+hooks+trout" },
+    { name: "Eagle Claw Spinning Combo 6'6\"", price: "$34.99", cat: "Combos", url: "https://www.amazon.com/s?k=Eagle+Claw+spinning+combo+trout" },
   ],
   "Flaming Gorge Reservoir": [
     { name: "Tube Jig Kit 1/2oz (12pk)", price: "$18.99", cat: "Jigs", hot: true, url: "https://www.amazon.com/s?k=tube+jig+kit+lake+trout" },
-    { name: "Crippled Herring Spoon 3/4oz", price: "$8.49", cat: "Spoons", url: "https://www.amazon.com/s?k=Crippled+Herring+spoon+lake+trout" },
-    { name: "Humminbird Helix 7 Finder", price: "$449.99", cat: "Electronics", url: "https://www.amazon.com/s?k=Humminbird+Helix+7+fish+finder" },
-    { name: "Scud Assortment #14-18 (12pk)", price: "$16.99", cat: "Flies", url: "https://www.amazon.com/s?k=scud+fly+assortment+trout" },
     { name: "Airplane Jig 1oz", price: "$6.99", cat: "Jigs", url: "https://www.amazon.com/s?k=airplane+jig+lake+trout" },
     { name: "Jigging Spoon 3/4oz", price: "$7.49", cat: "Spoons", hot: true, url: "https://www.amazon.com/s?k=jigging+spoon+lake+trout" },
+    { name: "Crippled Herring Spoon 3/4oz", price: "$8.49", cat: "Spoons", url: "https://www.amazon.com/s?k=Crippled+Herring+spoon+lake+trout" },
+    { name: "Swedish Pimple 1/2oz", price: "$6.99", cat: "Jigs", url: "https://www.amazon.com/s?k=Swedish+Pimple+jigging+spoon" },
+    { name: "Berkley Flicker Shad", price: "$7.49", cat: "Lures", url: "https://www.amazon.com/s?k=Berkley+Flicker+Shad+trolling" },
+    { name: "Scud Assortment #14-18 (12pk)", price: "$16.99", cat: "Flies", url: "https://www.amazon.com/s?k=scud+fly+assortment+trout" },
+    { name: "San Juan Worm Assortment (12pk)", price: "$9.99", cat: "Flies", url: "https://www.amazon.com/s?k=san+juan+worm+fly+assortment" },
+    { name: "Woolly Bugger Assortment (12pk)", price: "$10.99", cat: "Flies", url: "https://www.amazon.com/s?k=woolly+bugger+fly+assortment" },
+    { name: "Humminbird Helix 7 Finder", price: "$449.99", cat: "Electronics", url: "https://www.amazon.com/s?k=Humminbird+Helix+7+fish+finder" },
+    { name: "Downrigger Cable 150ft", price: "$19.99", cat: "Trolling", url: "https://www.amazon.com/s?k=downrigger+cable+150ft" },
   ],
   "_general": [
-    { name: "Eagle Claw Snelled Hooks (24pk)", price: "$4.99", cat: "Hooks", url: "https://www.amazon.com/s?k=Eagle+Claw+snelled+hooks+trout" },
     { name: "Gamakatsu Octopus Hooks #6 (25pk)", price: "$5.49", cat: "Hooks", hot: true, url: "https://www.amazon.com/s?k=Gamakatsu+octopus+hooks+size+6" },
+    { name: "Eagle Claw Snelled Hooks (24pk)", price: "$4.99", cat: "Hooks", url: "https://www.amazon.com/s?k=Eagle+Claw+snelled+hooks+trout" },
     { name: "Mustad Treble Hooks #12 (25pk)", price: "$6.99", cat: "Hooks", url: "https://www.amazon.com/s?k=Mustad+treble+hooks+size+12" },
+    { name: "Circle Hooks #4 (25pk)", price: "$5.99", cat: "Hooks", url: "https://www.amazon.com/s?k=circle+hooks+size+4+fishing" },
+    { name: "Bait Holder Hooks #8 (50pk)", price: "$4.49", cat: "Hooks", url: "https://www.amazon.com/s?k=bait+holder+hooks+size+8" },
     { name: "Barrel Swivels Assorted (75pk)", price: "$5.99", cat: "Swivels", url: "https://www.amazon.com/s?k=barrel+swivels+fishing+assorted" },
     { name: "Snap Swivels (50pk)", price: "$6.49", cat: "Swivels", url: "https://www.amazon.com/s?k=snap+swivels+fishing" },
+    { name: "3-Way Swivels (25pk)", price: "$5.49", cat: "Swivels", url: "https://www.amazon.com/s?k=3+way+swivels+fishing" },
     { name: "Split Shot Sinkers Assorted", price: "$5.99", cat: "Weights", url: "https://www.amazon.com/s?k=split+shot+sinkers+assorted+fishing" },
     { name: "Bullet Weights (18pk)", price: "$4.99", cat: "Weights", url: "https://www.amazon.com/s?k=bullet+weights+fishing" },
+    { name: "Egg Sinkers Assorted (20pk)", price: "$5.49", cat: "Weights", url: "https://www.amazon.com/s?k=egg+sinkers+assorted+fishing" },
+    { name: "Bell Sinkers Assorted (15pk)", price: "$4.99", cat: "Weights", url: "https://www.amazon.com/s?k=bell+sinkers+assorted+fishing" },
     { name: "Berkley Trilene XL 6lb (330yd)", price: "$6.49", cat: "Line", hot: true, url: "https://www.amazon.com/s?k=Berkley+Trilene+XL+6lb+fishing+line" },
     { name: "PowerPro Braided 20lb (150yd)", price: "$18.99", cat: "Line", url: "https://www.amazon.com/s?k=PowerPro+braided+line+20lb" },
     { name: "Fluorocarbon Leader 6lb (25yd)", price: "$9.99", cat: "Line", url: "https://www.amazon.com/s?k=fluorocarbon+leader+6lb+fishing" },
+    { name: "Mono Leader 4lb (100yd)", price: "$4.99", cat: "Line", url: "https://www.amazon.com/s?k=monofilament+leader+4lb+fishing" },
     { name: "Bobber Assortment (10pk)", price: "$4.99", cat: "Terminal", url: "https://www.amazon.com/s?k=fishing+bobber+assortment" },
-    { name: "Tackle Box Organizer", price: "$12.99", cat: "Gear", url: "https://www.amazon.com/s?k=fishing+tackle+box+organizer" },
-    { name: "Fishing Pliers + Line Cutter", price: "$14.99", cat: "Tools", hot: true, url: "https://www.amazon.com/s?k=fishing+pliers+line+cutter" },
-    { name: "Fish Scale + Tape Measure", price: "$9.99", cat: "Tools", url: "https://www.amazon.com/s?k=digital+fish+scale+tape+measure" },
-    { name: "Worm Container (2pk)", price: "$3.99", cat: "Bait", url: "https://www.amazon.com/s?k=worm+container+fishing+bait" },
-    { name: "Stringer 10ft", price: "$5.99", cat: "Gear", url: "https://www.amazon.com/s?k=fish+stringer+10ft" },
-    { name: "Fishing Net Rubber Mesh", price: "$19.99", cat: "Gear", url: "https://www.amazon.com/s?k=fishing+landing+net+rubber+mesh+trout" },
+    { name: "Slip Bobber Kit", price: "$6.99", cat: "Terminal", url: "https://www.amazon.com/s?k=slip+bobber+kit+fishing" },
     { name: "Kastmaster Spoon 1/4oz", price: "$5.99", cat: "Lures", hot: true, url: "https://www.amazon.com/s?k=Kastmaster+spoon+1%2F4oz+trout" },
     { name: "Rooster Tail Spinner 1/8oz", price: "$4.99", cat: "Lures", url: "https://www.amazon.com/s?k=Rooster+Tail+spinner+trout" },
     { name: "Panther Martin Spinner", price: "$5.49", cat: "Lures", url: "https://www.amazon.com/s?k=Panther+Martin+spinner+trout" },
+    { name: "Mepps Aglia Spinner #2", price: "$5.99", cat: "Lures", url: "https://www.amazon.com/s?k=Mepps+Aglia+spinner+trout" },
+    { name: "Blue Fox Vibrax Spinner", price: "$6.49", cat: "Lures", url: "https://www.amazon.com/s?k=Blue+Fox+Vibrax+spinner+trout" },
+    { name: "Senko Worm 5\" (10pk)", price: "$7.99", cat: "Lures", url: "https://www.amazon.com/s?k=Yamamoto+Senko+5+inch+bass" },
+    { name: "Ned Rig Kit (15pk)", price: "$9.99", cat: "Lures", url: "https://www.amazon.com/s?k=ned+rig+kit+bass+fishing" },
+    { name: "Crankbait Assortment (6pk)", price: "$14.99", cat: "Lures", url: "https://www.amazon.com/s?k=crankbait+assortment+bass+fishing" },
+    { name: "Nightcrawlers Bait Container", price: "$3.99", cat: "Bait", url: "https://www.amazon.com/s?k=worm+container+fishing+bait" },
+    { name: "Tackle Box Organizer", price: "$12.99", cat: "Gear", url: "https://www.amazon.com/s?k=fishing+tackle+box+organizer" },
+    { name: "Fishing Pliers + Line Cutter", price: "$14.99", cat: "Tools", hot: true, url: "https://www.amazon.com/s?k=fishing+pliers+line+cutter" },
+    { name: "Fish Scale + Tape Measure", price: "$9.99", cat: "Tools", url: "https://www.amazon.com/s?k=digital+fish+scale+tape+measure" },
+    { name: "Hook Remover Forceps", price: "$6.99", cat: "Tools", url: "https://www.amazon.com/s?k=fishing+hook+remover+forceps" },
+    { name: "Fish Stringer 10ft", price: "$5.99", cat: "Gear", url: "https://www.amazon.com/s?k=fish+stringer+10ft" },
+    { name: "Fishing Net Rubber Mesh", price: "$19.99", cat: "Gear", url: "https://www.amazon.com/s?k=fishing+landing+net+rubber+mesh+trout" },
+    { name: "Polarized Fishing Sunglasses", price: "$24.99", cat: "Gear", hot: true, url: "https://www.amazon.com/s?k=polarized+fishing+sunglasses" },
+    { name: "Fishing Hat Sun Protection", price: "$14.99", cat: "Gear", url: "https://www.amazon.com/s?k=fishing+hat+sun+protection+UPF" },
+    { name: "Dry Bag 10L Waterproof", price: "$12.99", cat: "Gear", url: "https://www.amazon.com/s?k=dry+bag+10L+waterproof+fishing" },
   ],
 };
 
@@ -452,6 +500,9 @@ function SpotsList({spots,filter,setFilter,sort,setSort,onSel,onAdd,catches}){
   </div>;
 }
 
+// Helper: turn bait/lure/fly name into Amazon search link
+const toBuyLink = (text) => `https://www.amazon.com/s?k=${encodeURIComponent(text + ' fishing')}`;
+
 // ===== DETAIL VIEW =====
 function Detail({spot,onBack,catches,user,spots,onLog,isPro,onPro}){
   const[tab,setTab]=useState("intel");const[rat,setRat]=useState(0);const[hov,setHov]=useState(0);const[cmt,setCmt]=useState("");
@@ -529,7 +580,7 @@ function Detail({spot,onBack,catches,user,spots,onLog,isPro,onPro}){
               {br.bite_rating==='on_fire'?'🔥 On Fire':br.bite_rating==='hot'?'🔥 Hot':br.bite_rating==='good'?'👍 Good':br.bite_rating==='fair'?'Fair':'Slow'}
             </span>
           </div>
-          <div style={{color:$.a,fontSize:11,fontWeight:500,marginTop:2}}>Biting on: {br.biting_on}</div>
+          <div style={{color:$.a,fontSize:11,fontWeight:500,marginTop:2}}>Biting on: {br.biting_on} <a href={toBuyLink(br.biting_on)} target="_blank" rel="noopener" style={{background:$.g,color:"#fff",padding:"2px 8px",borderRadius:5,fontSize:9,fontWeight:600,textDecoration:"none",marginLeft:4}}>Buy →</a></div>
           <div style={{color:$.dm,fontSize:10}}>{br.method && `${br.method} · `}{br.time_of_day && `${br.time_of_day} · `}{br.reported_at}</div>
           {br.notes && <div style={{color:$.mt,fontSize:10,fontStyle:"italic",marginTop:2}}>{br.notes}</div>}
           <div style={{color:$.mt,fontSize:9,marginTop:2}}>— {br.profiles?.username || 'Angler'}</div>
@@ -545,7 +596,7 @@ function Detail({spot,onBack,catches,user,spots,onLog,isPro,onPro}){
       </div>)}</Card>
       <Card><h3 style={h3}>🎣 What to Use</h3>{hd.tactics.map((tc,i)=><div key={i} style={{marginBottom:10}}>
         <div style={{fontSize:10,fontWeight:600,color:$.a,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>{tc.type}</div>
-        {tc.flies.map((f,j)=><div key={j} style={{fontSize:10,color:$.dm,padding:"1px 0 1px 10px",position:"relative"}}><span style={{position:"absolute",left:0,color:$.mt}}>›</span>{f}</div>)}
+        {tc.flies.map((f,j)=><div key={j} style={{fontSize:10,color:$.dm,padding:"1px 0 1px 10px",position:"relative"}}><span style={{position:"absolute",left:0,color:$.mt}}>›</span>{f} <a href={toBuyLink(f)} target="_blank" rel="noopener" style={{color:$.g,fontSize:9,fontWeight:600,textDecoration:"none"}}>buy</a></div>)}
       </div>)}
       {hd.tip&&<div style={{background:$.wD+"18",borderRadius:7,padding:"7px 10px",marginTop:8,borderLeft:`3px solid ${$.w}`}}>
         <div style={{fontSize:9,fontWeight:600,color:$.w,textTransform:"uppercase",marginBottom:2}}>Pro Tip</div>
