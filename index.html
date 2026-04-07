@@ -1,4 +1,4 @@
-]<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -500,19 +500,109 @@ function SpotsList({spots,filter,setFilter,sort,setSort,onSel,onAdd,catches}){
   </div>;
 }
 
-// Helper: turn bait/lure/fly name into Amazon search link
+// Smart product search — maps common fishing items to specific product searches
+// that land on the right product instead of variety packs
+const PRODUCT_MAP = [
+  // Flies — fly fishing specific
+  { match: /BWO.*(?:parachute|para)|parachute.*BWO/i, query: '"Umpqua BWO Parachute" dry fly 3 pack' },
+  { match: /BWO|baetis|blue winged olive/i, query: '"BWO" dry fly "3 pack" trout umpqua' },
+  { match: /griffith'?s gnat/i, query: '"Griffiths Gnat" dry fly "3 pack" trout' },
+  { match: /sow ?bug/i, query: '"sow bug" fly "6 pack" trout nymph' },
+  { match: /pheasant tail/i, query: '"pheasant tail" nymph fly "6 pack" trout' },
+  { match: /zebra midge/i, query: '"zebra midge" fly "6 pack" trout' },
+  { match: /midge.*(?:pupa|larva|emerger)|RS2/i, query: '"RS2 emerger" fly "6 pack" trout' },
+  { match: /midge/i, query: '"midge" dry fly "6 pack" trout umpqua' },
+  { match: /CDC comparadun|comparadun/i, query: '"CDC Comparadun" dry fly "3 pack"' },
+  { match: /parachute adams/i, query: '"Parachute Adams" dry fly "3 pack" umpqua' },
+  { match: /elk hair caddis/i, query: '"Elk Hair Caddis" dry fly "3 pack"' },
+  { match: /caddis/i, query: '"Elk Hair Caddis" dry fly "6 pack" trout' },
+  { match: /san juan worm/i, query: '"San Juan Worm" fly red "6 pack"' },
+  { match: /egg pattern|egg fly/i, query: '"egg pattern" fly trout "6 pack"' },
+  { match: /woolly bugger/i, query: '"Woolly Bugger" fly olive "6 pack"' },
+  { match: /PMD.*(?:sparkle|dun)|sparkle dun/i, query: '"PMD Sparkle Dun" dry fly "3 pack"' },
+  { match: /PMD|pale morning dun/i, query: '"PMD" dry fly "3 pack" trout' },
+  { match: /green drake/i, query: '"Green Drake" dry fly "3 pack" trout' },
+  { match: /skwala|stonefly.*nymph/i, query: '"stonefly nymph" fly "6 pack" trout' },
+  { match: /hare'?s ear/i, query: '"Hares Ear Nymph" fly "6 pack" trout' },
+  { match: /copper john/i, query: '"Copper John" nymph fly "6 pack"' },
+  { match: /hopper.*foam|foam hopper/i, query: '"foam hopper" dry fly "3 pack" trout' },
+  { match: /hopper/i, query: '"hopper" dry fly trout "3 pack"' },
+  { match: /yellow sally/i, query: '"Yellow Sally" stonefly "3 pack"' },
+  { match: /scud/i, query: '"scud" fly "6 pack" trout nymph orange' },
+  { match: /mosquito.*fly|fly.*mosquito/i, query: '"Mosquito" dry fly "3 pack" trout' },
+  { match: /soft hackle/i, query: '"soft hackle" wet fly "6 pack"' },
+  { match: /streamer/i, query: '"streamer fly" trout "3 pack" olive' },
+
+  // Bait
+  { match: /powerbait.*chartreuse|chartreuse.*powerbait/i, query: '"Berkley PowerBait" chartreuse trout 1.75 oz' },
+  { match: /powerbait.*garlic|garlic.*powerbait/i, query: '"Berkley PowerBait" garlic trout 1.75 oz' },
+  { match: /powerbait.*rainbow/i, query: '"Berkley PowerBait" rainbow trout 1.75 oz' },
+  { match: /powerbait.*orange|orange.*powerbait/i, query: '"Berkley PowerBait" orange trout 1.75 oz' },
+  { match: /powerbait.*egg|egg.*powerbait/i, query: '"Berkley PowerBait" eggs trout' },
+  { match: /powerbait/i, query: '"Berkley PowerBait" trout 1.75 oz' },
+  { match: /mice tail/i, query: '"Berkley Mice Tails" trout' },
+  { match: /nightcrawler/i, query: '"nightcrawlers" live fishing bait' },
+  { match: /mealworm/i, query: '"mealworms" live fishing bait ice' },
+  { match: /waxworm/i, query: '"waxworms" live fishing bait ice' },
+  { match: /chicken liver/i, query: '"chicken liver" catfish bait' },
+  { match: /stink bait/i, query: '"catfish stink bait" bait' },
+
+  // Lures
+  { match: /kastmaster/i, query: '"Kastmaster" spoon 1/4 oz trout chrome' },
+  { match: /jake'?s spin[- ]a[- ]lure/i, query: '"Jakes Spin a Lure" trout 1/4 oz' },
+  { match: /rapala countdown/i, query: '"Rapala Countdown" CD07 trout' },
+  { match: /rapala/i, query: '"Rapala" countdown trout lure' },
+  { match: /rooster tail/i, query: '"Rooster Tail" spinner 1/8 oz trout' },
+  { match: /panther martin/i, query: '"Panther Martin" spinner 1/4 oz trout' },
+  { match: /mepps/i, query: '"Mepps Aglia" spinner trout' },
+  { match: /blue fox.*vibrax|vibrax/i, query: '"Blue Fox Vibrax" spinner trout' },
+  { match: /wedding ring/i, query: '"Wedding Ring" spinner trolling trout' },
+  { match: /pop gear|ford fender|lake troll/i, query: '"pop gear" trolling rig trout' },
+  { match: /tube jig/i, query: '"tube jig" 1/2 oz lake trout' },
+  { match: /airplane jig/i, query: '"airplane jig" 1 oz lake trout' },
+  { match: /crippled herring/i, query: '"Crippled Herring" spoon 3/4 oz' },
+  { match: /jigging spoon/i, query: '"jigging spoon" 3/4 oz lake trout' },
+  { match: /swedish pimple/i, query: '"Swedish Pimple" jigging spoon 1/2 oz' },
+  { match: /blade bait/i, query: '"blade bait" walleye 1/2 oz' },
+  { match: /crankbait/i, query: '"crankbait" bass fishing lure' },
+  { match: /spinnerbait/i, query: '"spinnerbait" bass fishing 3/8 oz' },
+  { match: /senko/i, query: '"Yamamoto Senko" 5 inch bass' },
+  { match: /ned rig/i, query: '"Ned rig" kit bass fishing' },
+  { match: /drop shot/i, query: '"drop shot" bass fishing kit' },
+  { match: /topwater popper|popper/i, query: '"topwater popper" bass lure' },
+  { match: /buzzbait/i, query: '"buzzbait" bass fishing 3/8 oz' },
+  { match: /frog lure|topwater frog/i, query: '"topwater frog" lure bass hollow body' },
+  { match: /swimbait/i, query: '"swimbait" bass fishing 5 inch' },
+  { match: /jig.*mealworm|jig.*minnow/i, query: '"ice fishing jig" kit with tungsten' },
+  { match: /jig/i, query: '"fishing jig" 1/4 oz trout bass' },
+
+  // Terminal tackle
+  { match: /fluorocarbon.*tippet|tippet/i, query: '"Rio fluorocarbon tippet" trout fly fishing' },
+  { match: /strike indicator/i, query: '"fly fishing strike indicator" pack' },
+  { match: /split shot/i, query: '"split shot" removable fishing pack' },
+  { match: /swivel/i, query: '"barrel swivels" fishing pack' },
+  { match: /treble hook/i, query: '"treble hooks" fishing pack' },
+  { match: /bobber/i, query: '"slip bobber" kit fishing' },
+];
+
 const toBuyLink = (text) => {
-  // Clean up and make search more specific
-  let q = text.replace(/[#]/g, 'size ').trim();
-  // Add context words so Amazon finds the right stuff
-  if (/midge|BWO|caddis|PMD|drake|stone|hopper|adams|gnat|emerger|dun|nymph|bugger|egg pattern|sow bug|pheasant tail|hare|copper john|scud|san juan|soft hackle|elk hair/i.test(q)) {
-    q += ' fly fishing flies trout';
-  } else if (/PowerBait|mice tail|worm|mealworm|waxworm/i.test(q)) {
-    q += ' trout bait';
-  } else if (/jig|spoon|spinner|crank|swim|rapala|kastmaster/i.test(q)) {
-    q += ' fishing lure';
+  if (!text) return 'https://www.amazon.com/s?k=fishing';
+  // Try each mapping
+  for (const m of PRODUCT_MAP) {
+    if (m.match.test(text)) {
+      return `https://www.amazon.com/s?k=${encodeURIComponent(m.query)}`;
+    }
   }
+  // Fallback: clean up and search
+  let q = text.replace(/#(\d+)/g, 'size $1').trim();
+  q += ' fishing';
   return `https://www.amazon.com/s?k=${encodeURIComponent(q)}`;
+};
+
+// Split "Biting on: X, Y, Z" into individual items for separate buy buttons
+const splitItems = (text) => {
+  if (!text) return [];
+  return text.split(/,\s*(?![^()]*\))/).map(s => s.trim()).filter(Boolean);
 };
 
 // ===== DETAIL VIEW =====
@@ -592,7 +682,10 @@ function Detail({spot,onBack,catches,user,spots,onLog,isPro,onPro}){
               {br.bite_rating==='on_fire'?'🔥 On Fire':br.bite_rating==='hot'?'🔥 Hot':br.bite_rating==='good'?'👍 Good':br.bite_rating==='fair'?'Fair':'Slow'}
             </span>
           </div>
-          <div style={{color:$.a,fontSize:11,fontWeight:500,marginTop:2}}>Biting on: {br.biting_on} <a href={toBuyLink(br.biting_on)} target="_blank" rel="noopener" style={{background:$.g,color:"#fff",padding:"2px 8px",borderRadius:5,fontSize:9,fontWeight:600,textDecoration:"none",marginLeft:4}}>Buy →</a></div>
+          <div style={{color:$.a,fontSize:11,fontWeight:500,marginTop:2}}>Biting on: {br.biting_on}</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:4}}>
+            {splitItems(br.biting_on).map((item,k)=><a key={k} href={toBuyLink(item)} target="_blank" rel="noopener" style={{background:$.g,color:"#fff",padding:"2px 8px",borderRadius:5,fontSize:9,fontWeight:600,textDecoration:"none"}}>🛒 {item.length>28?item.slice(0,26)+'…':item}</a>)}
+          </div>
           <div style={{color:$.dm,fontSize:10}}>{br.method && `${br.method} · `}{br.time_of_day && `${br.time_of_day} · `}{br.reported_at}</div>
           {br.notes && <div style={{color:$.mt,fontSize:10,fontStyle:"italic",marginTop:2}}>{br.notes}</div>}
           <div style={{color:$.mt,fontSize:9,marginTop:2}}>— {br.profiles?.username || 'Angler'}</div>
@@ -664,7 +757,7 @@ function Detail({spot,onBack,catches,user,spots,onLog,isPro,onPro}){
           {g.sponsor&&<span style={{fontSize:8,color:$.w,fontWeight:500}}>{g.sponsor}</span>}
           <div style={{fontSize:9,color:$.dm,textTransform:"uppercase",letterSpacing:1,marginBottom:3,marginTop:g.sponsor?2:0}}>{g.cat}</div>
           <div style={{fontSize:12,fontWeight:500,marginBottom:6}}>{g.name}</div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:15,fontWeight:700,color:$.g}}>{g.price}</span><a href={g.url} target="_blank" rel="noopener" style={{background:$.a,color:"#fff",padding:"5px 12px",borderRadius:6,fontFamily:F,fontSize:10,fontWeight:600,textDecoration:"none"}}>Shop →</a></div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:15,fontWeight:700,color:$.g}}>{g.price}</span><a href={toBuyLink(g.name)} target="_blank" rel="noopener" style={{background:$.a,color:"#fff",padding:"5px 12px",borderRadius:6,fontFamily:F,fontSize:10,fontWeight:600,textDecoration:"none"}}>Shop →</a></div>
         </Card>)}
       </div>
       {gear.length > 0 && <div style={{marginTop:10,fontSize:9,color:$.mt,textAlign:"center"}}>Affiliate links support Stone Creek at no extra cost</div>}
@@ -786,7 +879,7 @@ function Deals({isPro,onPro}){
         <div style={{fontSize:9,color:$.dm,textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>{g.cat}</div>
         <div style={{fontSize:11,fontWeight:500,marginBottom:4}}>{g.name}</div>
         {g.spot!=="General"&&<div style={{fontSize:8,color:$.mt,marginBottom:4}}>📍 {g.spot}</div>}
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:14,fontWeight:700,color:$.g}}>{g.price}</span><a href={g.url} target="_blank" rel="noopener" style={{background:$.a,color:"#fff",padding:"4px 10px",borderRadius:6,fontFamily:F,fontSize:10,fontWeight:600,textDecoration:"none"}}>Shop →</a></div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:14,fontWeight:700,color:$.g}}>{g.price}</span><a href={toBuyLink(g.name)} target="_blank" rel="noopener" style={{background:$.a,color:"#fff",padding:"4px 10px",borderRadius:6,fontFamily:F,fontSize:10,fontWeight:600,textDecoration:"none"}}>Shop →</a></div>
       </Card>)}
     </div>
     <div style={{marginTop:10,fontSize:9,color:$.mt,textAlign:"center"}}>Links go to Amazon — prices may vary</div>
