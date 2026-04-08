@@ -1036,7 +1036,7 @@ function CatchModal({close,user,spots,reload,sel,done}){
     {fish.map((f,i)=><div key={i} style={{background:$.sf,borderRadius:8,padding:10,marginBottom:6,border:`1px solid ${$.bd}`,position:"relative"}}>
       {fish.length>1&&<span onClick={()=>removeFish(i)} style={{position:"absolute",top:6,right:8,color:$.r,cursor:"pointer",fontSize:14,fontWeight:700}}>×</span>}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-        <div><label style={{...lbl,fontSize:9,marginTop:0}}>SPECIES *</label><select value={f.species} onChange={e=>updateFish(i,'species',e.target.value)} style={{...ipt,fontSize:11,padding:"6px 8px"}}><option value="">Select...</option>{(spot?.species||SP_OPT).map(s=><option key={s}>{s}</option>)}</select></div>
+        <div><label style={{...lbl,fontSize:9,marginTop:0}}>SPECIES *</label><select value={f.species} onChange={e=>updateFish(i,'species',e.target.value)} style={{...ipt,fontSize:11,padding:"6px 8px"}}><option value="">Select...</option>{SP_OPT.map(s=><option key={s}>{s}</option>)}</select></div>
         <div><label style={{...lbl,fontSize:9,marginTop:0}}>METHOD</label><select value={f.meth} onChange={e=>updateFish(i,'meth',e.target.value)} style={{...ipt,fontSize:11,padding:"6px 8px"}}>{ME_OPT.map(m=><option key={m}>{m}</option>)}</select></div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginTop:4}}>
@@ -1101,7 +1101,7 @@ function BitingModal({close,user,spots}){
     <label style={lbl}>SPOT *</label>
     <select value={spotId} onChange={e=>{setSpotId(e.target.value);setSpecies("");}} style={ipt}><option value="">Select spot...</option>{spots.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-      <div><label style={lbl}>SPECIES *</label><select value={species} onChange={e=>setSpecies(e.target.value)} style={ipt}><option value="">Select...</option>{(spot?.species||SP_OPT).map(s=><option key={s}>{s}</option>)}</select></div>
+      <div><label style={lbl}>SPECIES *</label><select value={species} onChange={e=>setSpecies(e.target.value)} style={ipt}><option value="">Select...</option>{SP_OPT.map(s=><option key={s}>{s}</option>)}</select></div>
       <div><label style={lbl}>METHOD</label><select value={method} onChange={e=>setMethod(e.target.value)} style={ipt}><option value="">Select...</option>{ME_OPT.map(m=><option key={m}>{m}</option>)}</select></div>
     </div>
     <label style={lbl}>BITING ON *</label>
