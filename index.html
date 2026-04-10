@@ -473,14 +473,23 @@ function MapView({spots,onSel}){
   })();},[]);
 
   useEffect(()=>{
-    if (!window.L || mapRef.current) return;
-    // Center on Utah
-    const map = L.map('fishmap').setView([39.5, -111.5], 7);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap',
-      maxZoom: 18,
-    }).addTo(map);
-    mapRef.current = map;
+    if (mapRef.current) return;
+    const init = () => {
+      if (!window.L) { setTimeout(init, 100); return; }
+      const el = document.getElementById('fishmap');
+      if (!el) { setTimeout(init, 100); return; }
+      const map = L.map('fishmap').setView([39.5, -111.5], 7);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+        maxZoom: 18,
+      }).addTo(map);
+      mapRef.current = map;
+      setTimeout(()=>map.invalidateSize(), 200);
+    };
+    init();
+    return () => {
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
+    };
   },[]);
 
   useEffect(()=>{
