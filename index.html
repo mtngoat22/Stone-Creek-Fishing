@@ -19,6 +19,8 @@ select, input, textarea, button { font-family: 'Barlow', sans-serif; }
 ::-webkit-scrollbar-track { background: #0b1120; }
 ::-webkit-scrollbar-thumb { background: #1e3348; border-radius: 3px; }
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 <div id="root"></div>
@@ -35,7 +37,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const { useState, useEffect, useCallback } = React;
+const { useState, useEffect, useCallback, useRef } = React;
 
 // Guides data (keyed by spot NAME now, not ID)
 const GUIDES = {
@@ -393,7 +395,7 @@ function App(){
             </div>
           </div>
           <nav style={{display:"flex",gap:2}}>
-            {[{k:"spots",l:"Spots",i:"📍"},{k:"log",l:"My Catches",i:"📋"},{k:"board",l:"Board",i:"🏆"},{k:"deals",l:"Gear",i:"🛒"},{k:"feed",l:"Feed",i:"📊"}].map(n=>(
+            {[{k:"spots",l:"Spots",i:"📍"},{k:"map",l:"Map",i:"🗺️"},{k:"log",l:"My Catches",i:"📋"},{k:"board",l:"Board",i:"🏆"},{k:"deals",l:"Gear",i:"🛒"},{k:"feed",l:"Feed",i:"📊"}].map(n=>(
               <button key={n.k} onClick={()=>{setView(n.k);setSel(null);}} style={{
                 background:view===n.k?$.aD+"30":"transparent",border:view===n.k?`1px solid ${$.aD}44`:"1px solid transparent",
                 color:view===n.k?$.aL:$.dm,padding:"6px 11px",borderRadius:8,cursor:"pointer",fontFamily:F,fontSize:12,fontWeight:500,display:"flex",alignItems:"center",gap:4
@@ -412,6 +414,7 @@ function App(){
       <main style={{maxWidth:1100,margin:"0 auto",padding:"20px 20px 80px"}}>
         {view==="spots"&&!sel&&<SpotsList spots={fSpots} filter={filter} setFilter={setFilter} sort={sort} setSort={setSort} onSel={setSel} onAdd={()=>setModal("add")} catches={catches}/>}
         {view==="spots"&&sel&&<Detail spot={sel} onBack={()=>setSel(null)} catches={catches} user={user} spots={spots} onLog={()=>setModal("catch")} isPro={isPro} onPro={()=>setModal("pro")}/>}
+        {view==="map"&&<MapView spots={spots} onSel={(s)=>{setSel(s);setView("spots");}}/>}
         {view==="log"&&<MyCatches uc={catches.filter(x=>x.user===user.username)} spots={spots} onLog={()=>setModal("catch")} isPro={isPro} onPro={()=>setModal("pro")}/>}
         {view==="board"&&<Board catches={catches} spots={spots}/>}
         {view==="deals"&&<Deals isPro={isPro} onPro={()=>setModal("pro")}/>}
@@ -451,6 +454,107 @@ function Overlay({close,children}){
 }
 
 // ===== SPOTS LIST (unchanged) =====
+function MapView({spots,onSel}){
+  const mapRef = useRef(null);
+  const [bitingBySpot, setBitingBySpot] = useState({});
+
+  useEffect(()=>{(async()=>{
+    // Load today's biting reports for all spots
+    const today = new Date().toISOString().split('T')[0];
+    const { data } = await supabase.from('biting_reports')
+      .select('spot_id, species, biting_on, method, bite_rating, notes')
+      .eq('reported_at', today);
+    const map = {};
+    (data||[]).forEach(r => {
+      if (!map[r.spot_id]) map[r.spot_id] = [];
+      map[r.spot_id].push(r);
+    });
+    setBitingBySpot(map);
+  })();},[]);
+
+  useEffect(()=>{
+    if (!window.L || mapRef.current) return;
+    // Center on Utah
+    const map = L.map('fishmap').setView([39.5, -111.5], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap',
+      maxZoom: 18,
+    }).addTo(map);
+    mapRef.current = map;
+  },[]);
+
+  useEffect(()=>{
+    if (!mapRef.current || !spots.length) return;
+    const map = mapRef.current;
+    // Clear old markers
+    map.eachLayer(l => { if (l instanceof L.Marker) map.removeLayer(l); });
+
+    const bitingColors = { on_fire:'#ef4444', hot:'#f97316', good:'#22c55e', fair:'#eab308', slow:'#6b7280' };
+
+    spots.forEach(spot => {
+      if (!spot.latitude || !spot.longitude) return;
+      const reports = bitingBySpot[spot.id] || [];
+      const topReport = reports[0];
+      const color = topReport ? (bitingColors[topReport.bite_rating] || '#3b82f6') : '#3b82f6';
+
+      const icon = L.divIcon({
+        className: 'fish-pin',
+        html: `<div style="background:${color};width:20px;height:20px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:10px;">🐟</div>`,
+        iconSize: [26,26],
+        iconAnchor: [13,13],
+      });
+
+      const marker = L.marker([spot.latitude, spot.longitude], {icon}).addTo(map);
+
+      // Popup content
+      let popup = `<div style="font-family:system-ui,sans-serif;min-width:200px;max-width:260px;">`;
+      popup += `<div style="font-weight:700;font-size:14px;color:#0f172a;margin-bottom:4px;">${spot.name}</div>`;
+      popup += `<div style="font-size:10px;color:#64748b;margin-bottom:8px;">${spot.region||''}</div>`;
+      if (reports.length) {
+        popup += `<div style="border-top:1px solid #e2e8f0;padding-top:6px;">`;
+        popup += `<div style="font-size:11px;font-weight:600;color:#0f172a;margin-bottom:4px;">🔥 What's Biting Today</div>`;
+        reports.slice(0,3).forEach(r => {
+          const c = bitingColors[r.bite_rating] || '#6b7280';
+          popup += `<div style="margin-bottom:6px;padding:4px;background:#f8fafc;border-radius:4px;border-left:3px solid ${c};">`;
+          popup += `<div style="font-size:11px;font-weight:600;color:#0f172a;">${r.species} <span style="color:${c};font-size:9px;text-transform:uppercase;">${r.bite_rating}</span></div>`;
+          popup += `<div style="font-size:10px;color:#475569;">On: ${r.biting_on}</div>`;
+          popup += `<div style="font-size:9px;color:#94a3b8;">Method: ${r.method}</div>`;
+          popup += `</div>`;
+        });
+        popup += `</div>`;
+      } else {
+        popup += `<div style="font-size:10px;color:#94a3b8;font-style:italic;">No reports today</div>`;
+      }
+      popup += `<button id="sel-${spot.id}" style="width:100%;margin-top:8px;background:#3b82f6;color:#fff;border:none;padding:6px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;">View Spot →</button>`;
+      popup += `</div>`;
+
+      marker.bindPopup(popup);
+      marker.on('popupopen', () => {
+        setTimeout(() => {
+          const btn = document.getElementById(`sel-${spot.id}`);
+          if (btn) btn.onclick = () => onSel(spot);
+        }, 100);
+      });
+    });
+  },[spots, bitingBySpot]);
+
+  return <div>
+    <div style={{marginBottom:12}}>
+      <h2 style={{fontFamily:H,fontSize:22,fontWeight:700,margin:0,color:$.w}}>🗺️ Utah Fishing Map</h2>
+      <div style={{fontSize:11,color:$.dm,marginTop:3}}>Click a pin to see what's biting today. Color = bite rating.</div>
+      <div style={{display:"flex",gap:10,marginTop:8,flexWrap:"wrap",fontSize:10}}>
+        <span style={{display:"flex",alignItems:"center",gap:4,color:$.dm}}><span style={{width:10,height:10,background:"#ef4444",borderRadius:"50%"}}></span>On Fire</span>
+        <span style={{display:"flex",alignItems:"center",gap:4,color:$.dm}}><span style={{width:10,height:10,background:"#f97316",borderRadius:"50%"}}></span>Hot</span>
+        <span style={{display:"flex",alignItems:"center",gap:4,color:$.dm}}><span style={{width:10,height:10,background:"#22c55e",borderRadius:"50%"}}></span>Good</span>
+        <span style={{display:"flex",alignItems:"center",gap:4,color:$.dm}}><span style={{width:10,height:10,background:"#eab308",borderRadius:"50%"}}></span>Fair</span>
+        <span style={{display:"flex",alignItems:"center",gap:4,color:$.dm}}><span style={{width:10,height:10,background:"#6b7280",borderRadius:"50%"}}></span>Slow</span>
+        <span style={{display:"flex",alignItems:"center",gap:4,color:$.dm}}><span style={{width:10,height:10,background:"#3b82f6",borderRadius:"50%"}}></span>No data</span>
+      </div>
+    </div>
+    <div id="fishmap" style={{height:"70vh",borderRadius:12,border:`1px solid ${$.sf}`,overflow:"hidden"}}></div>
+  </div>;
+}
+
 function SpotsList({spots,filter,setFilter,sort,setSort,onSel,onAdd,catches}){
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
