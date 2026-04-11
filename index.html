@@ -212,7 +212,7 @@ const HATCH = {
 
 const IMG = {
   "Provo River (Middle)": "https://images.unsplash.com/photo-1468956398224-6d6f66e22c35?w=800&h=400&fit=crop",
-  "Strawberry Reservoir": "https://images.unsplash.com/photo-1505765050516-f72dcac9c60e?w=800&h=400&fit=crop",
+  "Strawberry Reservoir": "https://raw.githubusercontent.com/mtngoat22/Stone-Creek-Fishing/main/PXL_20260410_020038178.jpg",
   "Jordanelle Reservoir": "https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=800&h=400&fit=crop",
   "Flaming Gorge Reservoir": "https://images.unsplash.com/photo-1500534314263-0869cdddb5b4?w=800&h=400&fit=crop",
   "Fish Lake": "https://images.unsplash.com/photo-1508193638397-1c4234db14d8?w=800&h=400&fit=crop",
@@ -724,6 +724,8 @@ const toBuyLink = (text) => {
 // Split "Biting on: X, Y, Z" into individual items for separate buy buttons
 const splitItems = (text) => {
   if (!text) return [];
+  // Skip non-product messages like "snowed in", "N/A", "closed", etc.
+  if (/snowed in|not accessible|access closed|plan a|N\/A|no reports|too cold|frozen|road closed|ice too thin/i.test(text)) return [];
   return text.split(/,\s*(?![^()]*\))/).map(s => s.trim()).filter(Boolean);
 };
 
