@@ -503,6 +503,7 @@ function MapView({spots,onSel}){
 
     const bitingColors = { on_fire:'#ef4444', hot:'#f97316', good:'#22c55e', fair:'#eab308', slow:'#6b7280' };
     let added = 0;
+    console.log('First spot data:', spots[0]);
 
     spots.forEach(spot => {
       const lat = parseFloat(spot.latitude);
