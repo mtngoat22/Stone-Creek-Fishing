@@ -13,18 +13,20 @@ function buildReport(spot, month) {
   const isSummer = month >= 5 && month <= 7;
   const isFall = month >= 8 && month <= 10;
 
-  // Alpine lakes are snowed in Oct-May
-  const isAlpine = /alpine|backcountry|high.elevation|8,?\d{3}|9,?\d{3}|10,?\d{3}|mountain/i.test(desc) ||
-                   /granddaddy|trial|mirror|washington|lofty|boulder|tony grove|silver lake|lofty|island lake|kidney|dean|brown duck/i.test(name);
+  // Truly alpine/backcountry waters are snowed in most of the year
+  // Only match very specific high-country waters — not big reservoirs that happen to be in the mountains
+  const isAlpine = /backcountry|hike.?in|trailhead|10,?\d{3}.?ft|11,?\d{3}.?ft/i.test(desc) ||
+                   /granddaddy|trial lake|mirror lake|tony grove|island lake|kidney lake|dean lake|brown duck|lofty lake/i.test(name);
 
-  if (isAlpine && (isWinter || month === 2 || month === 3 || month === 10)) {
+  // Only mark as snowed in during peak winter (Dec-Mar) for these real backcountry waters
+  if (isAlpine && (month === 11 || month === 0 || month === 1 || month === 2)) {
     return {
       species: species[0],
       biting_on: "Still snowed in — plan a summer trip",
       method: "Fly",
       bite_rating: "slow",
       time_of_day: "N/A",
-      notes: "High-elevation water. Access typically opens June-September. Check road and trail conditions."
+      notes: "High-elevation backcountry water. Access typically opens June-September. Check trail conditions."
     };
   }
 
