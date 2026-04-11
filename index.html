@@ -266,9 +266,10 @@ function App(){
       const { data: spotData } = await supabase.from('spots').select('*').order('avg_rating', { ascending: false });
       if (spotData?.length) {
         setSpots(spotData.map(s => ({
-          id: s.id, name: s.name, reg: s.region, species: s.species || [],
+          id: s.id, name: s.name, reg: s.region, region: s.region, species: s.species || [],
           rating: parseFloat(s.avg_rating) || 0, ratings: [], catches: s.total_catches || 0,
-          by: s.is_official ? 'UDWR' : 'Community', desc: s.description || '',
+          by: s.is_official ? 'UDWR' : 'Community', desc: s.description || '', description: s.description || '',
+          latitude: s.latitude, longitude: s.longitude,
         })));
       }
 
@@ -331,7 +332,7 @@ function App(){
   // Helper to reload spots
   const reloadSpots = async () => {
     const { data } = await supabase.from('spots').select('*').order('avg_rating', { ascending: false });
-    if (data) setSpots(data.map(s => ({ id: s.id, name: s.name, reg: s.region, species: s.species || [], rating: parseFloat(s.avg_rating) || 0, ratings: [], catches: s.total_catches || 0, by: s.is_official ? 'UDWR' : 'Community', desc: s.description || '' })));
+    if (data) setSpots(data.map(s => ({ id: s.id, name: s.name, reg: s.region, region: s.region, species: s.species || [], rating: parseFloat(s.avg_rating) || 0, ratings: [], catches: s.total_catches || 0, by: s.is_official ? 'UDWR' : 'Community', desc: s.description || '', description: s.description || '', latitude: s.latitude, longitude: s.longitude })));
   };
 
   // Helper to reload catches
